@@ -1,4 +1,4 @@
-workspace = { members = ["core"] }
+workspace = { members = ["browser_core"] }
 [package]
 name = "browser_with_rust"
 version = "0.1.0"
