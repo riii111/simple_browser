@@ -1,10 +1,23 @@
-workspace = { members = ["browser_core"] }
+workspace = { members = ["browser_core", "net/wasabi"] }
 [package]
+authors = ["riii111"]
 name = "browser_with_rust"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
+[features]
+default = ["wasabi"]
+wasabi = ["dep:net_wasabi", "dep:noli"]
+
+[[bin]]
+name = "browser_with_rust"
+path = "src/main.rs"
+required_features = ["wasabi"]
+
 [dependencies]
-noli = { git = "https://github.com/hikalium/wasabi.git", branch = "for_saba" }
+browser_core = { path = "./browser_core" }
+net_wasabi = { path = "./net/wasabi", optional = true }
+noli = { git = "https://github.com/hikalium/wasabi.git", branch = "for_saba", optional = true }
