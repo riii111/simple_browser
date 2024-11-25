@@ -14,7 +14,7 @@ pub struct HttpResponse {
 
 impl HttpResponse {
     pub fn new(raw_response: String) -> Result<Self, Error> {
-        // キャリッジリターンと改行シーケンス（\n\r）を、単一の開業に置き換える.
+        // キャリッジリターンと改行シーケンス（\n\r）を、単一の改行に置き換える.
         let preprocessed_response = raw_response.trim_start().replace("\n\r", "\n");
 
         // ステータスラインの分割
