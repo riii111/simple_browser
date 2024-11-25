@@ -1,7 +1,7 @@
 workspace = { members = ["browser_core", "net/wasabi"] }
 [package]
 authors = ["riii111"]
-name = "browser_with_rust"
+name = "simple_browser"
 version = "0.1.0"
 edition = "2021"
 
@@ -13,7 +13,7 @@ default = ["wasabi"]
 wasabi = ["dep:net_wasabi", "dep:noli"]
 
 [[bin]]
-name = "browser_with_rust"
+name = "simple_browser"
 path = "src/main.rs"
 required_features = ["wasabi"]
 

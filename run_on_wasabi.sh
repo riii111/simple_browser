@@ -3,7 +3,7 @@
 HOME_PATH=$PWD
 TARGET_PATH=$PWD"/build"
 OS_PATH=$TARGET_PATH"/wasabi"
-APP_NAME="browser_with_rust"
+APP_NAME="simple_browser"
 MAKEFILE_PATH=$HOME_PATH"/Makefile"
 
 # execute `mkdir build/` if it doesn't exist

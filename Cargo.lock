@@ -19,15 +19,6 @@ name = "browser_core"
 version = "0.1.0"
 
 [[package]]
-name = "browser_with_rust"
-version = "0.1.0"
-dependencies = [
- "browser_core",
- "net_wasabi",
- "noli",
-]
-
-[[package]]
 name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -128,6 +119,15 @@ dependencies = [
 name = "sabi"
 version = "0.1.0"
 source = "git+https://github.com/hikalium/wasabi.git?branch=for_saba#abf27c6f587e777fce5c53234d45d997ed075996"
+
+[[package]]
+name = "simple_browser"
+version = "0.1.0"
+dependencies = [
+ "browser_core",
+ "net_wasabi",
+ "noli",
+]
 
 [[package]]
 name = "syn"
