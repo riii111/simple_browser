@@ -1,6 +1,9 @@
+use crate::renderer::dom::node::Element;
 use crate::renderer::dom::node::ElementKind;
 use crate::renderer::dom::node::Node;
+use crate::renderer::dom::node::NodeKind;
 use crate::renderer::dom::node::Window;
+use crate::renderer::html::attribute::Attribute;
 use crate::renderer::html::token::HtmlTokenizer;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
@@ -46,6 +49,60 @@ impl HtmlParser {
         }
     }
 
+    /// 要素ノードの生成
+    fn create_element(&self, tag: &str, attributes: Vec<Attribute>) -> Node {
+        Node::new(NodeKind::Element(Element::new(tag, attributes)))
+    }
+
+    /// 要素ノードを挿入
+    fn insert_element(&self, tag: &str, attributes: Vec<Attribute>) {
+        let window = self.window.borrow();
+
+        // 現在のスタック末尾のノードを取得
+        let current = match self.stack_of_open_elements.last() {
+            Some(n) => n.clone(),
+            None => window.document(), // 空なら、ルート要素が現在参照中のノードになる
+        };
+        let node = Rc::new(RefCell::new(self.create_element(tag, attributes)));
+
+        // 現在参照中のノードに、子要素が既に存在する場合
+        if current.borrow().first_child().is_some() {
+            let mut last_sibiling = current.borrow().first_child();
+            loop {
+                last_sibiling = match last_sibiling {
+                    Some(ref node) => {
+                        if node.borrow().next_sibling().is_some() {
+                            node.borrow().next_sibling()
+                        } else {
+                            break;
+                        }
+                    }
+                    None => unimplemented!("last_sibiling should be Some"),
+                };
+            }
+
+            // 新たなノードを挿入
+            last_sibiling
+                .unwrap()
+                .borrow_mut()
+                .set_next_sibling(Some(node.clone()));
+            node.borrow_mut().set_previous_sibling(Rc::downgrade(
+                &current
+                    .borrow()
+                    .first_child()
+                    .expect("failed to get a first child"),
+            ))
+        } else {
+            // 兄弟ノードが存在しない場合、新たなノードを現在参照中のノードの最初の子要素として設定
+            current.borrow_mut().set_first_child(Some(node.clone()));
+        }
+        current.borrow_mut().set_last_child(Rc::downgrade(&node));
+
+        node.borrow_mut().set_parent(Rc::downgrade(&current));
+
+        self.stack_of_open_elements.push(node);
+    }
+
     /// ステートマシンの実装
     pub fn construct_tree(&mut self) -> Rc<RefCell<Window>> {
         let mut token = self.t.next();
@@ -63,7 +120,7 @@ impl HtmlParser {
                         continue;
                     }
 
-                    self.mode = InsertionMOde::BeforeHtml;
+                    self.mode = InsertionMode::BeforeHtml;
                     continue;
                 }
 
