@@ -55,6 +55,8 @@ impl HtmlParser {
     }
 
     /// 要素ノードを挿入
+    /// https://html.spec.whatwg.org/multipage/parsing.html#insert-a-foreign-element
+    /// foreign element = HTML以外の要素. SVGやMathML要素などを指す
     fn insert_element(&self, tag: &str, attributes: Vec<Attribute>) {
         let window = self.window.borrow();
 
@@ -101,6 +103,74 @@ impl HtmlParser {
         node.borrow_mut().set_parent(Rc::downgrade(&current));
 
         self.stack_of_open_elements.push(node);
+    }
+
+    /// ノードをpopし、種類が一致するかどうかを返す
+    fn pop_current_node(&mut self, element_kind: ElementKind) -> bool {
+        let current = match self.stack_of_open_elements.last() {
+            Some(n) => n,
+            None => return false,
+        };
+
+        if current.borrow().element_kind() == Some(element_kind) {
+            self.stack_of_open_elements.pop();
+            return true;
+        }
+
+        false
+    }
+
+    /// 指定した種類のノードが現れるまでpopし続ける！
+    fn pop_until(&mut self, element_kind: ElementKind) {
+        assert!(
+            self.contain_in_stack(element_kind),
+            "stack doesn't have an element {:?}",
+            element_kind,
+        );
+
+        loop {
+            let current = match self.stack_of_open_elements.pop() {
+                Some(n) => n,
+                None => return,
+            };
+
+            if current.borrow().element_kind() == Some(element_kind) {
+                return;
+            }
+        }
+    }
+
+    /// 対象の種類の要素を保持しているかチェック
+    fn contain_in_stack(&mut self, element_kind: ElementKind) -> bool {
+        for i in 0..self.stack_of_open_elements.len() {
+            if self.stack_of_open_elements[i].borrow().element_kind() == Some(element_kind) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// 文字ノードを生成しDOMツリーに追加する、または現在のテキストノードに新たな文字を挿入する
+    fn insert_char(&mut self, c: char) {
+        // 最後のノードを取得
+        let current = match self.stack_of_open_elements.last() {
+            Some(n) => n.clone(),
+            None => return,
+        };
+
+        // 現在参照中のノードがテキストノードであれば、そのノードに文字を追加する
+        if let NodeKind::Text(ref mut s) = current.borrow_mut().kind {
+            s.push(c);
+            return;
+        }
+
+        // 改行or空白文字ならテキストノードを追加しない
+        if c == '\n' || c == ' ' {
+            return;
+        }
+
+        let node = Rc::new(RefCell::new(self.create_char(c)));
     }
 
     /// ステートマシンの実装
