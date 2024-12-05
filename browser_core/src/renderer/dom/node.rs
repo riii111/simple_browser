@@ -7,7 +7,7 @@ use alloc::vec::Vec;
 use core::cell::RefCell;
 use core::str::FromStr;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq)]
 pub enum NodeKind {
     /// https://dom.spec.whatwg.org/#interface-document
     Document,
@@ -15,6 +15,19 @@ pub enum NodeKind {
     Element(Element),
     /// https://dom.spec.whatwg.org/#interface-text
     Text(String),
+}
+
+impl PartialEq for NodeKind {
+    fn eq(&self, other: &Self) -> bool {
+        match &self {
+            NodeKind::Document => matches!(other, NodeKind::Document),
+            NodeKind::Element(e1) => match &other {
+                NodeKind::Element(e2) => e1.kind == e2.kind,
+                _ => false,
+            },
+            NodeKind::Text(_) => matches!(other, NodeKind::Text(_)),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -26,6 +39,16 @@ pub struct Node {
     last_child: Weak<RefCell<Node>>, // 最後の子ノード
     previous_sibling: Weak<RefCell<Node>>, // ノードの前の兄弟ノード
     next_sibling: Option<Rc<RefCell<Node>>>, // ノードの次の兄弟ノード
+}
+
+/*
+テストを実装するために必要だが、Nodeオブジェクトはフィールドに弱い参照を持つため
+単純に比較不可。なので自前で実装
+*/
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+    }
 }
 
 /*
@@ -114,6 +137,13 @@ pub struct Window {
     document: Rc<RefCell<Node>>,
 }
 
+// Defaultトレイトを実装
+impl Default for Window {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Window {
     pub fn new() -> Self {
         let window = Self {
@@ -191,7 +221,7 @@ impl FromStr for ElementKind {
             "h1" => Ok(ElementKind::H1),
             "h2" => Ok(ElementKind::H2),
             "a" => Ok(ElementKind::A),
-            "_" => Err(format!("unimplemented element name {:?}", s)),
+            _ => Err(format!("unimplemented element name {:?}", s)),
         }
     }
 }
