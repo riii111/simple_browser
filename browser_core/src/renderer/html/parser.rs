@@ -6,8 +6,10 @@ use crate::renderer::dom::node::Window;
 use crate::renderer::html::attribute::Attribute;
 use crate::renderer::html::token::HtmlTokenizer;
 use alloc::rc::Rc;
+use alloc::string::String;
 use alloc::vec::Vec;
 use core::cell::RefCell;
+use core::str::FromStr;
 
 use super::token::HtmlToken;
 
@@ -57,7 +59,7 @@ impl HtmlParser {
     /// 要素ノードを挿入
     /// https://html.spec.whatwg.org/multipage/parsing.html#insert-a-foreign-element
     /// foreign element = HTML以外の要素. SVGやMathML要素などを指す
-    fn insert_element(&self, tag: &str, attributes: Vec<Attribute>) {
+    fn insert_element(&mut self, tag: &str, attributes: Vec<Attribute>) {
         let window = self.window.borrow();
 
         // 現在のスタック末尾のノードを取得
@@ -98,8 +100,8 @@ impl HtmlParser {
             // 兄弟ノードが存在しない場合、新たなノードを現在参照中のノードの最初の子要素として設定
             current.borrow_mut().set_first_child(Some(node.clone()));
         }
-        current.borrow_mut().set_last_child(Rc::downgrade(&node));
 
+        current.borrow_mut().set_last_child(Rc::downgrade(&node));
         node.borrow_mut().set_parent(Rc::downgrade(&current));
 
         self.stack_of_open_elements.push(node);
@@ -151,6 +153,13 @@ impl HtmlParser {
         false
     }
 
+    /// 文字の生成
+    fn create_char(&self, c: char) -> Node {
+        let mut s = String::new();
+        s.push(c);
+        Node::new(NodeKind::Text(s))
+    }
+
     /// 文字ノードを生成しDOMツリーに追加する、または現在のテキストノードに新たな文字を挿入する
     fn insert_char(&mut self, c: char) {
         // 最後のノードを取得
@@ -171,6 +180,30 @@ impl HtmlParser {
         }
 
         let node = Rc::new(RefCell::new(self.create_char(c)));
+
+        // 参照中のノードに子要素がある場合、その直後に挿入
+        if current.borrow().first_child().is_some() {
+            current
+                .borrow()
+                .first_child()
+                .unwrap()
+                .borrow_mut()
+                .set_next_sibling(Some(node.clone()));
+            node.borrow_mut().set_previous_sibling(Rc::downgrade(
+                &current
+                    .borrow()
+                    .first_child()
+                    .expect("failed to get a first child"),
+            ));
+        } else {
+            // 最初の子要素として設定
+            current.borrow_mut().set_first_child(Some(node.clone()));
+        }
+
+        current.borrow_mut().set_last_child(Rc::downgrade(&node));
+        node.borrow_mut().set_parent(Rc::downgrade(&current));
+
+        self.stack_of_open_elements.push(node);
     }
 
     /// ステートマシンの実装
@@ -280,7 +313,6 @@ impl HtmlParser {
                             self_closing: _,
                             ref attributes,
                         }) => {
-                            // 2
                             if tag == "style" || tag == "script" {
                                 self.insert_element(tag, attributes.to_vec());
                                 self.original_insertion_mode = self.mode;
@@ -300,6 +332,14 @@ impl HtmlParser {
                             if let Ok(_element_kind) = ElementKind::from_str(tag) {
                                 self.pop_until(ElementKind::Head);
                                 self.mode = InsertionMode::AfterHead;
+                                continue;
+                            }
+                        }
+                        Some(HtmlToken::EndTag { ref tag }) => {
+                            if tag == "head" {
+                                self.mode = InsertionMode::AfterHead;
+                                token = self.t.next();
+                                self.pop_until(ElementKind::Head);
                                 continue;
                             }
                         }
@@ -345,6 +385,30 @@ impl HtmlParser {
 
                 InsertionMode::InBody => {
                     match token {
+                        Some(HtmlToken::StartTag {
+                            ref tag,
+                            self_closing: _,
+                            ref attributes,
+                        }) => match tag.as_str() {
+                            "p" => {
+                                self.insert_element(tag, attributes.to_vec());
+                                token = self.t.next();
+                                continue;
+                            }
+                            "h1" | "h2" => {
+                                self.insert_element(tag, attributes.to_vec());
+                                token = self.t.next();
+                                continue;
+                            }
+                            "a" => {
+                                self.insert_element(tag, attributes.to_vec());
+                                token = self.t.next();
+                                continue;
+                            }
+                            _ => {
+                                token = self.t.next();
+                            }
+                        },
                         Some(HtmlToken::EndTag { ref tag }) => {
                             match tag.as_str() {
                                 "body" => {
@@ -366,15 +430,34 @@ impl HtmlParser {
                                     }
                                     continue;
                                 }
+                                "p" => {
+                                    let element_kind = ElementKind::from_str(tag)
+                                        .expect("failed to convert string to ElementKind");
+                                    token = self.t.next();
+                                    self.pop_until(element_kind);
+                                    continue;
+                                }
+                                "h1" | "h2" => {
+                                    let element_kind = ElementKind::from_str(tag)
+                                        .expect("failed to convert string to ElementKind");
+                                    token = self.t.next();
+                                    self.pop_until(element_kind);
+                                    continue;
+                                }
                                 _ => {
                                     token = self.t.next();
                                 }
                             }
                         }
+                        // bodyではテキストを扱えるようにするため
+                        Some(HtmlToken::Char(c)) => {
+                            self.insert_char(c);
+                            token = self.t.next();
+                            continue;
+                        }
                         Some(HtmlToken::Eof) | None => {
                             return self.window.clone();
                         }
-                        _ => {}
                     }
                 }
 

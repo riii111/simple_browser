@@ -1,9 +1,11 @@
 use crate::renderer::html::attribute::Attribute;
+use alloc::format;
 use alloc::rc::Rc;
 use alloc::rc::Weak;
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::cell::RefCell;
+use core::str::FromStr;
 
 #[derive(Debug, Clone)]
 pub enum NodeKind {
@@ -173,4 +175,23 @@ pub enum ElementKind {
     H2,
     /// https://html.spec.whatwg.org/multipage/text-level-semantics.html#the-a-element
     A,
+}
+
+impl FromStr for ElementKind {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "html" => Ok(ElementKind::Html),
+            "head" => Ok(ElementKind::Head),
+            "style" => Ok(ElementKind::Style),
+            "script" => Ok(ElementKind::Script),
+            "body" => Ok(ElementKind::Body),
+            "p" => Ok(ElementKind::P),
+            "h1" => Ok(ElementKind::H1),
+            "h2" => Ok(ElementKind::H2),
+            "a" => Ok(ElementKind::A),
+            "_" => Err(format!("unimplemented element name {:?}", s)),
+        }
+    }
 }
