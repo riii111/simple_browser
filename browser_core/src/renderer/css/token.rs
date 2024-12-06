@@ -29,6 +29,12 @@ pub enum CssToken {
     AtKeyword(String),
 }
 
+impl Default for CssToken {
+    fn default() -> Self {
+        CssToken::Ident(String::new())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct CssTokenizer {
     pos: usize,
