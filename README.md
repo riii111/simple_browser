@@ -28,5 +28,7 @@ WasabiOS上で、簡易版ブラウザを作成。<br/>
 ## 参考
 ### ブラウザ
 https://github.com/d0iasm/sababook/tree/main
+
+https://github.com/d0iasm/saba
 ### OS
 https://github.com/hikalium/wasabi/tree/for_saba
