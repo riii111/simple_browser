@@ -9,26 +9,27 @@ use core::fmt::Display;
 use core::fmt::Formatter;
 use core::str::FromStr;
 
-#[derive(Debug, Clone, Eq)]
-pub enum NodeKind {
-    /// https://dom.spec.whatwg.org/#interface-document
-    Document,
-    /// https://dom.spec.whatwg.org/#interface-element
-    Element(Element),
-    /// https://dom.spec.whatwg.org/#interface-text
-    Text(String),
+#[derive(Debug, Clone)]
+pub struct Window {
+    document: Rc<RefCell<Node>>,
 }
 
-impl PartialEq for NodeKind {
-    fn eq(&self, other: &Self) -> bool {
-        match &self {
-            NodeKind::Document => matches!(other, NodeKind::Document),
-            NodeKind::Element(e1) => match &other {
-                NodeKind::Element(e2) => e1.kind == e2.kind,
-                _ => false,
-            },
-            NodeKind::Text(_) => matches!(other, NodeKind::Text(_)),
-        }
+impl Window {
+    pub fn new() -> Self {
+        let window = Self {
+            document: Rc::new(RefCell::new(Node::new(NodeKind::Document))),
+        };
+
+        window
+            .document
+            .borrow_mut()
+            .set_window(Rc::downgrade(&Rc::new(RefCell::new(window.clone()))));
+
+        window
+    }
+
+    pub fn document(&self) -> Rc<RefCell<Node>> {
+        self.document.clone()
     }
 }
 
@@ -71,6 +72,10 @@ impl Node {
         }
     }
 
+    pub fn set_window(&mut self, window: Weak<RefCell<Window>>) {
+        self.window = window;
+    }
+
     pub fn set_parent(&mut self, parent: Weak<RefCell<Node>>) {
         self.parent = parent;
     }
@@ -111,10 +116,6 @@ impl Node {
         self.next_sibling.as_ref().cloned()
     }
 
-    pub fn set_window(&mut self, window: Weak<RefCell<Window>>) {
-        self.window = window;
-    }
-
     pub fn kind(&self) -> NodeKind {
         self.kind.clone()
     }
@@ -135,33 +136,25 @@ impl Node {
 }
 
 #[derive(Debug, Clone)]
-pub struct Window {
-    document: Rc<RefCell<Node>>,
+pub enum NodeKind {
+    /// https://dom.spec.whatwg.org/#interface-document
+    Document,
+    /// https://dom.spec.whatwg.org/#interface-element
+    Element(Element),
+    /// https://dom.spec.whatwg.org/#interface-text
+    Text(String),
 }
 
-// Defaultトレイトを実装
-impl Default for Window {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Window {
-    pub fn new() -> Self {
-        let window = Self {
-            document: Rc::new(RefCell::new(Node::new(NodeKind::Document))),
-        };
-
-        window
-            .document
-            .borrow_mut()
-            .set_window(Rc::downgrade(&Rc::new(RefCell::new(window.clone()))));
-
-        window
-    }
-
-    pub fn document(&self) -> Rc<RefCell<Node>> {
-        self.document.clone()
+impl PartialEq for NodeKind {
+    fn eq(&self, other: &Self) -> bool {
+        match &self {
+            NodeKind::Document => matches!(other, NodeKind::Document),
+            NodeKind::Element(e1) => match &other {
+                NodeKind::Element(e2) => e1.kind == e2.kind,
+                _ => false,
+            },
+            NodeKind::Text(_) => matches!(other, NodeKind::Text(_)),
+        }
     }
 }
 
@@ -182,19 +175,19 @@ impl Element {
         }
     }
 
-    pub fn is_block_element(&self) -> bool {
-        match self.kind {
-            ElementKind::Body | ElementKind::H1 | ElementKind::H2 | ElementKind::P => true,
-            _ => false,
-        }
-    }
-
     pub fn kind(&self) -> ElementKind {
         self.kind
     }
 
     pub fn attributes(&self) -> Vec<Attribute> {
         self.attributes.clone()
+    }
+
+    pub fn is_block_element(&self) -> bool {
+        match self.kind {
+            ElementKind::Body | ElementKind::H1 | ElementKind::H2 | ElementKind::P => true,
+            _ => false,
+        }
     }
 }
 
@@ -220,6 +213,23 @@ pub enum ElementKind {
     A,
 }
 
+impl Display for ElementKind {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+        let s = match self {
+            ElementKind::Html => "html",
+            ElementKind::Head => "head",
+            ElementKind::Style => "style",
+            ElementKind::Script => "script",
+            ElementKind::Body => "body",
+            ElementKind::H1 => "h1",
+            ElementKind::H2 => "h2",
+            ElementKind::P => "p",
+            ElementKind::A => "a",
+        };
+        write!(f, "{}", s)
+    }
+}
+
 impl FromStr for ElementKind {
     type Err = String;
 
@@ -239,10 +249,9 @@ impl FromStr for ElementKind {
     }
 }
 
-// 列挙型→文字列に変換をサポート
-impl Display for ElementKind {
-    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-        let s = match self {
+impl ElementKind {
+    pub fn as_str(&self) -> &'static str {
+        match self {
             ElementKind::Html => "html",
             ElementKind::Head => "head",
             ElementKind::Style => "style",
@@ -252,7 +261,6 @@ impl Display for ElementKind {
             ElementKind::H2 => "h2",
             ElementKind::P => "p",
             ElementKind::A => "a",
-        };
-        write!(f, "{}", s)
+        }
     }
 }
