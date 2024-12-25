@@ -64,11 +64,7 @@ pub fn create_layout_object(
         }
 
         // CSSでスタイルが指定されていない場合、デフォルトの値または親のノードから継承した値を使用する
-        let parent_style = if let Some(parent) = parent_obj {
-            Some(parent.borrow().style())
-        } else {
-            None
-        };
+        let parent_style = parent_obj.as_ref().map(|parent| parent.borrow().style());
         layout_object.borrow_mut().defaulting_style(n, parent_style);
 
         // displayプロパティがnoneの場合、ノードを作成しない
@@ -158,24 +154,22 @@ impl LayoutObject {
                         FontSize::XXLarge => 3,
                     };
                     let plain_text = t
-                        .replace("\n", " ")
+                        .replace('\n', " ")
                         .split(' ')
                         .filter(|s| !s.is_empty())
                         .collect::<Vec<_>>()
                         .join(" ");
                     let lines = split_text(plain_text, CHAR_WIDTH * ratio);
-                    let mut i = 0;
-                    for line in lines {
+                    for (i, line) in lines.into_iter().enumerate() {
                         let item = DisplayItem::Text {
                             text: line,
                             style: self.style(),
                             layout_point: LayoutPoint::new(
                                 self.point().x(),
-                                self.point().y() + CHAR_HEIGHT_WITH_PADDING * i,
+                                self.point().y() + CHAR_HEIGHT_WITH_PADDING * i as i64,
                             ),
                         };
                         v.push(item);
-                        i += 1;
                     }
 
                     return v;
@@ -338,7 +332,7 @@ impl LayoutObject {
             match declaration.property.as_str() {
                 "background-color" => {
                     if let ComponentValue::Ident(value) = &declaration.value {
-                        let color = match Color::from_name(&value) {
+                        let color = match Color::from_name(value) {
                             Ok(color) => color,
                             Err(_) => Color::white(),
                         };
@@ -347,7 +341,7 @@ impl LayoutObject {
                     }
 
                     if let ComponentValue::HashToken(color_code) = &declaration.value {
-                        let color = match Color::from_code(&color_code) {
+                        let color = match Color::from_code(color_code) {
                             Ok(color) => color,
                             Err(_) => Color::white(),
                         };
@@ -357,7 +351,7 @@ impl LayoutObject {
                 }
                 "color" => {
                     if let ComponentValue::Ident(value) = &declaration.value {
-                        let color = match Color::from_name(&value) {
+                        let color = match Color::from_name(value) {
                             Ok(color) => color,
                             Err(_) => Color::black(),
                         };
@@ -365,7 +359,7 @@ impl LayoutObject {
                     }
 
                     if let ComponentValue::HashToken(color_code) = &declaration.value {
-                        let color = match Color::from_code(&color_code) {
+                        let color = match Color::from_code(color_code) {
                             Ok(color) => color,
                             Err(_) => Color::black(),
                         };

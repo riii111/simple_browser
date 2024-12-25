@@ -184,10 +184,11 @@ impl Element {
     }
 
     pub fn is_block_element(&self) -> bool {
-        match self.kind {
-            ElementKind::Body | ElementKind::H1 | ElementKind::H2 | ElementKind::P => true,
-            _ => false,
-        }
+        // matchesマクロ（https://qiita.com/niwaka_dev/items/c5b2f5b6587e827a3247）
+        matches!(
+            self.kind,
+            ElementKind::Body | ElementKind::H1 | ElementKind::H2 | ElementKind::P
+        )
     }
 }
 
