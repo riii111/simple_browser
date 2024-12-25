@@ -192,6 +192,10 @@ impl Element {
     pub fn kind(&self) -> ElementKind {
         self.kind
     }
+
+    pub fn attributes(&self) -> Vec<Attribute> {
+        self.attributes.clone()
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
