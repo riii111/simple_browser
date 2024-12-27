@@ -1,8 +1,11 @@
+use alloc::format;
 use alloc::rc::Rc;
+use alloc::string::ToString;
+use browser_core::error::Error;
 use browser_core::{
     browser::Browser,
     constants::{
-        ADDRESSBAR_HEIGHT, DARKGREY, LIGHTGREY, TOOLBAR_HEIGHT, WHITE, WINDOW_HEIGHT,
+        ADDRESSBAR_HEIGHT, BLACK, DARKGREY, GREY, LIGHTGREY, TOOLBAR_HEIGHT, WHITE, WINDOW_HEIGHT,
         WINDOW_INIT_X_POS, WINDOW_INIT_Y_POS, WINDOW_WIDTH,
     },
 };
@@ -17,7 +20,7 @@ pub struct WasabiUI {
 }
 
 impl WasabiUI {
-    pub fn new() -> Self {
+    pub fn new(browser: Rc<RefCell<Browser>>) -> Self {
         Self {
             browser,
             window: Window::new(

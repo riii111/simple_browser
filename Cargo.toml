@@ -8,7 +8,7 @@ default-run = "simple_browser"
 
 [features]
 default = ["wasabi"]
-wasabi = ["dep:net_wasabi", "dep:noli"]
+wasabi = ["dep:net_wasabi", "dep:ui_wasabi", "dep:noli"]
 
 [[bin]]
 name = "simple_browser"
@@ -18,4 +18,5 @@ required_features = ["wasabi"]
 [dependencies]
 browser_core = { path = "./browser_core" }
 net_wasabi = { path = "./net/wasabi", optional = true }
+ui_wasabi = { path = "./ui/wasabi", optional = true }
 noli = { git = "https://github.com/hikalium/wasabi.git", branch = "for_saba", optional = true }

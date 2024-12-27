@@ -127,6 +127,7 @@ dependencies = [
  "browser_core",
  "net_wasabi",
  "noli",
+ "ui_wasabi",
 ]
 
 [[package]]

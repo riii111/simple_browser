@@ -3,36 +3,30 @@
 
 extern crate alloc;
 
+use core::cell::RefCell;
+
 use crate::alloc::string::ToString;
+use alloc::rc::Rc;
 use browser_core::browser::Browser;
 use browser_core::http::HttpResponse;
 use noli::*;
-
-static TEST_HTTP_RESPONSE: &str = r#"HTTP/1.1 200 OK
-Data: xx xx xx
-
-
-<html>
-<head></head>
-<body>
-  <h1 id="title">H1 Title</h1>
-  <h2 class="class">H2 Title</h2>
-  <p>Test text.</p>
-  <p>
-    <a href="example.com">Link1</a>
-    <a href="example.com">Link2</a>
-  </p>
-</body>
-</html>
-"#;
+use ui_wasabi::app::WasabiUI;
 
 fn main() -> u64 {
+    // ブラウザ構造体を初期化
     let browser = Browser::new();
 
-    let response =
-        HttpResponse::new(TEST_HTTP_RESPONSE.to_string()).expect("failed to parse http response");
-    let page = browser.borrow().current_page();
-    page.borrow_mut().receive_response(response);
+    // WasabiUI構造体を初期化
+    let ui = Rc::new(RefCell::new(WasabiUI::new(browser)));
+
+    // アプリの実行を開始
+    match ui.borrow_mut().start() {
+        Ok(_) => {}
+        Err(e) => {
+            println!("browser fails to start: {:#?}", e);
+            return 1;
+        }
+    };
 
     0
 }
