@@ -141,6 +141,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ui_wasabi"
+version = "0.1.0"
+dependencies = [
+ "browser_core",
+ "noli",
+]
+
+[[package]]
 name = "unicode-ident"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"

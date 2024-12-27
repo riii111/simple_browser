@@ -1,4 +1,4 @@
-workspace = { members = ["browser_core", "net/wasabi"] }
+workspace = { members = ["browser_core", "net/wasabi", "ui/wasabi"] }
 [package]
 authors = ["riii111"]
 name = "simple_browser"
