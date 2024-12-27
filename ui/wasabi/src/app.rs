@@ -11,6 +11,9 @@ use browser_core::{
 };
 use core::cell::RefCell;
 use noli::error::Result as OsResult;
+use noli::prelude::SystemApi;
+use noli::println;
+use noli::sys::{api::MouseEvent, wasabi::Api};
 use noli::window::{StringSize, Window};
 
 #[derive(Debug)]
@@ -66,6 +69,19 @@ impl WasabiUI {
         Ok(())
     }
 
+    /// マウスの位置を制御する
+    fn handle_mouse_input(&mut self) -> Result<(), Error> {
+        if let Some(MouseEvent {
+            button: _button,
+            position,
+        }) = Api::get_mouse_cursor_info()
+        {
+            println!("mouse position {:?}", position);
+        }
+
+        Ok(())
+    }
+
     pub fn setup(&mut self) -> Result<(), Error> {
         if let Err(error) = self.setup_toolbar() {
             // OsResultとResultが持つError型は異なるため、変換が必要
@@ -81,8 +97,9 @@ impl WasabiUI {
     }
 
     pub fn run_app(&mut self) -> Result<(), Error> {
-        // TODO: あとで実装
-        Ok(())
+        loop {
+            self.handle_mouse_input()?;
+        }
     }
 
     pub fn start(&mut self) -> Result<(), Error> {
