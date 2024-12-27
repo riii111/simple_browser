@@ -16,16 +16,26 @@ use noli::println;
 use noli::sys::{api::MouseEvent, wasabi::Api};
 use noli::window::{StringSize, Window};
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum InputMode {
+    Normal,  // 文字入力NG
+    Editing, // 文字入力OK
+}
+
 #[derive(Debug)]
 pub struct WasabiUI {
     browser: Rc<RefCell<Browser>>,
+    input_url: String,
     window: Window,
+    input_mode: InputMode,
 }
 
 impl WasabiUI {
     pub fn new(browser: Rc<RefCell<Browser>>) -> Self {
         Self {
             browser,
+            input_url: String::new(),
+            input_mode: InputMode::Normal,
             window: Window::new(
                 "saba".to_string(),
                 WHITE,
@@ -83,10 +93,24 @@ impl WasabiUI {
 
     /// 文字を入力する
     fn handle_key_input(&mut self) -> Result<(), Error> {
-        if let Some(c) = Api::read_key() {
-            println!("input text: {:?}", c);
+        match self.input_mode {
+            InputMode::Normal => {
+                // InputModeがNormalのとき、キー入力を無視
+                let _ = Api::read_key();
+            }
+            InputMode::Editing => {
+                // InputModeがEditingのとき、キー入力を受け付ける
+                if let Some(c) = Api::read_key() {
+                    if c == 0x7f as char || c == 0x08 as char {
+                        // デリートキーorバックスペースキーが押されたので、最後の文字を削除
+                        self.input_url.pop();
+                    } else {
+                        // それ以外のキーは入力文字を追加
+                        self.input_url.push(c);
+                    }
+                }
+            }
         }
-
         Ok(())
     }
 
