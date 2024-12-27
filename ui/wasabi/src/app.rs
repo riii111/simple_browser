@@ -81,6 +81,15 @@ impl WasabiUI {
         Ok(())
     }
 
+    /// 文字を入力する
+    fn handle_key_input(&mut self) -> Result<(), Error> {
+        if let Some(c) = Api::read_key() {
+            println!("input text: {:?}", c);
+        }
+
+        Ok(())
+    }
+
     pub fn setup(&mut self) -> Result<(), Error> {
         if let Err(error) = self.setup_toolbar() {
             // OsResultとResultが持つError型は異なるため、変換が必要
@@ -98,6 +107,7 @@ impl WasabiUI {
     pub fn run_app(&mut self) -> Result<(), Error> {
         loop {
             self.handle_mouse_input()?;
+            self.handle_key_input()?;
         }
     }
 
