@@ -3,10 +3,12 @@ use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::string::ToString;
+use browser_core::constants::WINDOW_PADDING;
 use browser_core::constants::{CONTENT_AREA_HEIGHT, CONTENT_AREA_WIDTH, TITLE_BAR_HEIGHT};
 use browser_core::display_item;
 use browser_core::error::Error;
 use browser_core::http::HttpResponse;
+use browser_core::renderer::layout::computed_style::FontSize;
 use browser_core::{
     browser::Browser,
     constants::{
@@ -21,6 +23,15 @@ use noli::println;
 use noli::rect::Rect;
 use noli::sys::{api::MouseEvent, wasabi::Api};
 use noli::window::{StringSize, Window};
+
+/// 文字をあらわすサイズを取得する
+fn convert_font_size(size: FontSize) -> StringSize {
+    match size {
+        FontSize::Medium => StringSize::Medium,
+        FontSize::XLarge => StringSize::Large,
+        FontSize::XXLarge => StringSize::XLarge,
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum InputMode {
@@ -281,9 +292,33 @@ impl WasabiUI {
             .borrow()
             .display_items();
         for item in display_items {
-            println!("{:?}", item);
+            match item {
+                DisplayItem::Text {
+                    text,
+                    style,
+                    layout_point,
+                } => {
+                    if self
+                        .window
+                        .draw_string(
+                            style.color().code_u32(),
+                            layout_point.x() + WINDOW_PADDING,
+                            layout_point.y() + WINDOW_PADDING + TOOLBAR_HEIGHT,
+                            &text,
+                            convert_font_size(style.font_size()),
+                            false,
+                        )
+                        .is_err()
+                    {
+                        return Err(Error::InvalidUI("failed to draw a string".to_string()));
+                    }
+                }
+                _ => {}
+            }
         }
+
         self.window.flush();
+
         Ok(())
     }
 
