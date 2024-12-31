@@ -4,6 +4,7 @@ use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::string::ToString;
 use browser_core::constants::{CONTENT_AREA_HEIGHT, CONTENT_AREA_WIDTH, TITLE_BAR_HEIGHT};
+use browser_core::display_item;
 use browser_core::error::Error;
 use browser_core::http::HttpResponse;
 use browser_core::{
@@ -173,6 +174,8 @@ impl WasabiUI {
             }
         }
 
+        self.update_ui()?;
+
         Ok(())
     }
 
@@ -267,6 +270,20 @@ impl WasabiUI {
             )
             .expect("failed to create a react for the address bar"),
         );
+        Ok(())
+    }
+
+    fn update_ui(&mut self) -> Result<(), Error> {
+        let display_items = self
+            .browser
+            .borrow()
+            .current_page()
+            .borrow()
+            .display_items();
+        for item in display_items {
+            println!("{:?}", item);
+        }
+        self.window.flush();
         Ok(())
     }
 

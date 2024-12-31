@@ -3,4 +3,4 @@
 extern crate alloc;
 
 pub mod app;
-pub mod cursor;
+mod cursor;
