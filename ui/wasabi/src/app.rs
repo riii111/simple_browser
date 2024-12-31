@@ -1,3 +1,4 @@
+use crate::cursor::Cursor;
 use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::ToString;
@@ -30,6 +31,7 @@ pub struct WasabiUI {
     input_url: String,
     window: Window,
     input_mode: InputMode,
+    cursor: Cursor,
 }
 
 impl WasabiUI {
@@ -47,6 +49,7 @@ impl WasabiUI {
                 WINDOW_HEIGHT,
             )
             .unwrap(),
+            cursor: Cursor::new(),
         }
     }
 
@@ -84,7 +87,12 @@ impl WasabiUI {
     /// マウスの位置を制御する
     fn handle_mouse_input(&mut self) -> Result<(), Error> {
         if let Some(MouseEvent { button, position }) = Api::get_mouse_cursor_info() {
-            println!("mouse position {:?}", position);
+            // マウスカーソルを描画
+            self.window.flush_area(self.cursor.rect());
+            self.cursor.set_position(position.x, position.y);
+            self.window.flush_area(self.cursor.rect());
+            self.cursor.flush();
+
             if button.l() || button.c() || button.r() {
                 // 相対位置を計算し、ツールバーの範囲内かどうかチェック
                 let relative_pos = (
