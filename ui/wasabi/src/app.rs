@@ -1,6 +1,7 @@
 use crate::cursor::Cursor;
 use alloc::format;
 use alloc::rc::Rc;
+use alloc::string::String;
 use alloc::string::ToString;
 use browser_core::constants::TITLE_BAR_HEIGHT;
 use browser_core::error::Error;
@@ -19,7 +20,7 @@ use noli::rect::Rect;
 use noli::sys::{api::MouseEvent, wasabi::Api};
 use noli::window::{StringSize, Window};
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum InputMode {
     Normal,  // 文字入力NG
     Editing, // 文字入力OK
