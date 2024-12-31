@@ -3,8 +3,10 @@ use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::string::ToString;
+use browser_core::constants::CONTENT_AREA_WIDTH;
 use browser_core::constants::TITLE_BAR_HEIGHT;
 use browser_core::error::Error;
+use browser_core::http::HttpResponse;
 use browser_core::{
     browser::Browser,
     constants::{
@@ -130,8 +132,56 @@ impl WasabiUI {
         Ok(())
     }
 
+    /// コンテンツエリア（HTMLが実際に描画される部分）をリセット
+    fn clear_content_area(&mut self) -> Result<(), Error> {
+        // コンテンツエリアを白く塗りつぶす
+        if self
+            .window
+            .fill_rect(
+                WHITE,
+                0,
+                TOOLBAR_HEIGHT + 2,
+                CONTENT_AREA_WIDTH,
+                CONTENT_AREA_HEIGHT - 2,
+            )
+            .is_err()
+        {
+            return Err(Error::InvalidUI(
+                "failed to clear a content area".to_string(),
+            ));
+        }
+
+        self.window.flush();
+
+        Ok(())
+    }
+
+    /// 入力されたURLに遷移開始
+    fn start_navigation(
+        &mut self,
+        handle_url: fn(String) -> Result<HttpResponse, Error>,
+        destination: String,
+    ) -> Result<(), Error> {
+        self.clear_content_area()?;
+
+        match handle_url(destination) {
+            Ok(response) => {
+                let page = self.browser.borrow().current_page();
+                page.borrow_mut().receive_response(response);
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+
+        Ok(())
+    }
+
     /// 文字を入力する
-    fn handle_key_input(&mut self) -> Result<(), Error> {
+    fn handle_key_input(
+        &mut self,
+        handle_url: fn(String) -> Result<HttpResponse, Error>,
+    ) -> Result<(), Error> {
         match self.input_mode {
             InputMode::Normal => {
                 // InputModeがNormalのとき、キー入力を無視
@@ -140,7 +190,13 @@ impl WasabiUI {
             InputMode::Editing => {
                 // InputModeがEditingのとき、キー入力を受け付ける
                 if let Some(c) = Api::read_key() {
-                    if c == 0x7f as char || c == 0x08 as char {
+                    if c == 0x0A as char {
+                        // Enterキーでナビゲーション開始
+                        self.start_navigation(handle_url, self.input_url.clone())?;
+
+                        self.input_url = String::new();
+                        self.input_mode = InputMode::Normal;
+                    } else if c == 0x7f as char || c == 0x08 as char {
                         // デリートキーorバックスペースキーが押されたので、最後の文字を削除
                         self.input_url.pop();
                         self.update_address_bar()?;

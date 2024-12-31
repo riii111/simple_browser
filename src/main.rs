@@ -3,12 +3,11 @@
 
 extern crate alloc;
 
-use core::cell::RefCell;
-
 use crate::alloc::string::ToString;
 use alloc::rc::Rc;
 use browser_core::browser::Browser;
 use browser_core::http::HttpResponse;
+use core::cell::RefCell;
 use noli::*;
 use ui_wasabi::app::WasabiUI;
 
