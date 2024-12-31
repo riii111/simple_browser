@@ -104,13 +104,50 @@ impl WasabiUI {
                     if c == 0x7f as char || c == 0x08 as char {
                         // デリートキーorバックスペースキーが押されたので、最後の文字を削除
                         self.input_url.pop();
+                        self.update_address_bar()?;
                     } else {
                         // それ以外のキーは入力文字を追加
                         self.input_url.push(c);
+                        self.update_address_bar()?;
                     }
                 }
             }
         }
+        Ok(())
+    }
+
+    fn update_address_bar(&mut self) -> Result<(), Error> {
+        // アドレスバーを白く塗りつぶす
+        if self
+            .window
+            .fill_rect(WHITE, 72, 4, WINDOW_WIDTH - 76, ADDRESSBAR_HEIGHT - 2)
+            .is_err()
+        {
+            return Err(Error::InvalidUI(
+                "failed to clear an address bar".to_string(),
+            ));
+        }
+        // input_urlをアドレスバーに描画
+        if self
+            .window
+            .draw_string(BLACK, 74, 6, &self.input_url, StringSize::Medium, false)
+            .is_err()
+        {
+            return Err(Error::InvalidUI(
+                "failed to update an address bar".to_string(),
+            ));
+        }
+
+        // アドレスバーの部分の画面を更新
+        self.window.flush_area(
+            Rect::new(
+                WINDOW_INIT_X_POS,
+                WINDOW_INIT_Y_POS + TOOLBAR_HEIGHT,
+                WINDOW_WIDTH,
+                TOOLBAR_HEIGHT,
+            )
+            .expect("failed to flush an address bar"),
+        );
         Ok(())
     }
 
