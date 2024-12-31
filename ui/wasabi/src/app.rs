@@ -3,8 +3,7 @@ use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::string::ToString;
-use browser_core::constants::CONTENT_AREA_WIDTH;
-use browser_core::constants::TITLE_BAR_HEIGHT;
+use browser_core::constants::{CONTENT_AREA_HEIGHT, CONTENT_AREA_WIDTH, TITLE_BAR_HEIGHT};
 use browser_core::error::Error;
 use browser_core::http::HttpResponse;
 use browser_core::{
@@ -285,17 +284,23 @@ impl WasabiUI {
         Ok(())
     }
 
-    pub fn run_app(&mut self) -> Result<(), Error> {
+    pub fn run_app(
+        &mut self,
+        handle_url: fn(String) -> Result<HttpResponse, Error>,
+    ) -> Result<(), Error> {
         loop {
             self.handle_mouse_input()?;
-            self.handle_key_input()?;
+            self.handle_key_input(handle_url)?;
         }
     }
 
-    pub fn start(&mut self) -> Result<(), Error> {
+    pub fn start(
+        &mut self,
+        handle_url: fn(String) -> Result<HttpResponse, Error>,
+    ) -> Result<(), Error> {
         self.setup()?;
 
-        self.run_app()?;
+        self.run_app(handle_url)?;
 
         Ok(())
     }
