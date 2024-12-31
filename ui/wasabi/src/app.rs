@@ -1,6 +1,7 @@
 use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::ToString;
+use browser_core::constants::TITLE_BAR_HEIGHT;
 use browser_core::error::Error;
 use browser_core::{
     browser::Browser,
@@ -13,6 +14,7 @@ use core::cell::RefCell;
 use noli::error::Result as OsResult;
 use noli::prelude::SystemApi;
 use noli::println;
+use noli::rect::Rect;
 use noli::sys::{api::MouseEvent, wasabi::Api};
 use noli::window::{StringSize, Window};
 
@@ -147,6 +149,31 @@ impl WasabiUI {
                 TOOLBAR_HEIGHT,
             )
             .expect("failed to flush an address bar"),
+        );
+        Ok(())
+    }
+
+    fn clear_address_bar(&mut self) -> Result<(), Error> {
+        // アドレスバーを白く塗りつぶす
+        if self
+            .window
+            .fill_rect(WHITE, 72, 4, WINDOW_WIDTH - 76, ADDRESSBAR_HEIGHT - 2)
+            .is_err()
+        {
+            return Err(Error::InvalidUI(
+                "failed to clear an address bar".to_string(),
+            ));
+        }
+
+        // アドレスバー部分の画面を更新
+        self.window.flush_area(
+            Rect::new(
+                WINDOW_INIT_X_POS,
+                WINDOW_INIT_Y_POS + TITLE_BAR_HEIGHT,
+                WINDOW_WIDTH,
+                TOOLBAR_HEIGHT,
+            )
+            .expect("failed to create a react for the address bar"),
         );
         Ok(())
     }
