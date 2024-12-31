@@ -6,9 +6,11 @@ use alloc::string::ToString;
 use browser_core::constants::WINDOW_PADDING;
 use browser_core::constants::{CONTENT_AREA_HEIGHT, CONTENT_AREA_WIDTH, TITLE_BAR_HEIGHT};
 use browser_core::display_item;
+use browser_core::display_item::DisplayItem;
 use browser_core::error::Error;
 use browser_core::http::HttpResponse;
 use browser_core::renderer::layout::computed_style::FontSize;
+use browser_core::renderer::layout::computed_style::TextDecoration;
 use browser_core::{
     browser::Browser,
     constants::{
@@ -306,7 +308,7 @@ impl WasabiUI {
                             layout_point.y() + WINDOW_PADDING + TOOLBAR_HEIGHT,
                             &text,
                             convert_font_size(style.font_size()),
-                            false,
+                            style.text_decoration() == TextDecoration::Underline,
                         )
                         .is_err()
                     {
