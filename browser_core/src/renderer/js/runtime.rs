@@ -1,10 +1,14 @@
 use crate::renderer::dom::node::Node as DomNode;
 use crate::renderer::js::ast::Node;
 use crate::renderer::js::ast::Program;
+use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
+use alloc::string::ToString;
 use core::borrow::Borrow;
 use core::cell::RefCell;
+use core::fmt::Display;
+use core::fmt::Formatter;
 use core::ops::Add;
 use core::ops::Sub;
 
@@ -45,6 +49,23 @@ impl Sub<RuntimeValue> for RuntimeValue {
         RuntimeValue::Number(u64::MIN)
     }
 }
+
+impl Display for RuntimeValue {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+        let s = match self {
+            RuntimeValue::Number(value) => format!("{}", value),
+            RuntimeValue::StringLiteral(value) => value.to_string(),
+            RuntimeValue::HtmlElement {
+                object,
+                property: _,
+            } => {
+                format!("HtmlElement: {:#?}", object)
+            }
+        };
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct JsRuntime {}
 
