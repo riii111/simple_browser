@@ -187,4 +187,53 @@ impl Program {
         &self.body
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::string::ToString;
+
+    #[test]
+    fn test_empty() {
+        /* JavaScriptが空のプログラム */
+        let input = "";
+        let lexer = JsLexer::new(input);
+        let mut parser = JsParser::new(lexer);
+        let expected = Program::new();
+        assert_eq!(expected, parser.parse_ast());
+    }
+
+    #[test]
+    fn test_num() {
+        /* 数字1つだけが存在するプログラム */
+        let input: &str = "42";
+        let lexer = JsLexer::new(input);
+        let mut parser = JsParser::new(lexer);
+        let mut expected = Program::new();
+        let mut body = Vec::new();
+        body.push(Rc::new(Node::ExpressionStatement(Some(Rc::new(
+            Node::NumberLiteral(42),
+        )))));
+        expected.set_body(body);
+        assert_eq!(expected, parser.parse_ast());
+    }
+
+    #[test]
+    fn test_add_nums() {
+        /* 2つの数字を足し合わせるプログラム */
+        let input: &str = "1 + 2";
+        let lexer = JsLexer::new(input);
+        let mut parser = JsParser::new(lexer);
+        let mut expected = Program::new();
+        let mut body = Vec::new();
+        body.push(Rc::new(Node::ExpressionStatement(Some(Rc::new(
+            Node::AdditiveExpression {
+                operator: '+',
+                left: Some(Rc::new(Node::NumberLiteral(1))),
+                right: Some(Rc::new(Node::NumberLiteral(2))),
+            },
+        )))));
+        expected.set_body(body);
+        assert_eq!(expected, parser.parse_ast());
+    }
 }
