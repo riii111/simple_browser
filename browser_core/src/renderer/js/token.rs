@@ -88,3 +88,51 @@ impl Iterator for JsLexer {
         Some(token)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_empty() {
+        /*
+         * 空文字列の場合、トークンは生成されない
+         */
+        let input = "".to_string();
+        let mut lexer = JsLexer::new(&input).peekable();
+        assert!(lexer.peek().is_none());
+    }
+
+    #[test]
+    fn test_num() {
+        /*
+         * 数字が1つの場合、トークンが生成される
+         */
+        let input = "42";
+        let mut lexer = JsLexer::new(input).peekable();
+        let expected = [Token::Number(42)].to_vec();
+        let mut i = 0;
+        while lexer.peek().is_some() {
+            assert_eq!(Some(expected[i].clone()), lexer.next());
+            i += 1;
+        }
+        assert!(lexer.peek().is_none());
+    }
+
+    #[test]
+    fn test_add_nums() {
+        /*
+         * 足し算の場合、トークンが生成される
+         */
+        let input = "1 + 2";
+        let mut lexer = JsLexer::new(input).peekable();
+        let expected = [Token::Number(1), Token::Punctuator('+'), Token::Number(2)].to_vec();
+
+        let mut i = 0;
+        while lexer.peek().is_some() {
+            assert_eq!(Some(expected[i].clone()), lexer.next());
+            i += 1;
+        }
+        assert!(lexer.peek().is_none());
+    }
+}
