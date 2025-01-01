@@ -96,8 +96,8 @@ mod tests {
         /*
          * 空文字列の場合、トークンは生成されない
          */
-        let input = "".to_string();
-        let mut lexer = JsLexer::new(&input).peekable();
+        let input: &str = "";
+        let mut lexer = JsLexer::new(input).peekable();
         assert!(lexer.peek().is_none());
     }
 
