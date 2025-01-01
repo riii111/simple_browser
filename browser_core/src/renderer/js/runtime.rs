@@ -99,3 +99,46 @@ impl JsRuntime {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::renderer::js::{ast::JsParser, token::JsLexer};
+
+    use super::*;
+
+    #[test]
+    fn test_add_nums() {
+        /* 足し算のテスト */
+        let input = "1 + 2";
+        let lexer = JsLexer::new(input);
+        let mut parser = JsParser::new(lexer);
+        let ast = parser.parse_ast();
+        let mut runtime = JsRuntime::new();
+        let expected = [Some(RuntimeValue::Number(3))];
+        let mut i = 0;
+
+        for node in ast.body() {
+            let result = runtime.eval(&Some(node.clone()));
+            assert_eq!(result, expected[i]);
+            i += 1;
+        }
+    }
+
+    #[test]
+    fn test_sub_nums() {
+        /* 引き算のテスト */
+        let input = "2 - 1";
+        let lexer = JsLexer::new(input);
+        let mut parser = JsParser::new(lexer);
+        let ast = parser.parse_ast();
+        let mut runtime = JsRuntime::new();
+        let expected = [Some(RuntimeValue::Number(1))];
+        let mut i = 0;
+
+        for node in ast.body() {
+            let result = runtime.eval(&Some(node.clone()));
+            assert_eq!(result, expected[i]);
+            i += 1;
+        }
+    }
+}
