@@ -102,6 +102,7 @@ impl CssTokenizer {
                 _ => break,
             }
         }
+
         num
     }
 
@@ -130,7 +131,7 @@ impl CssTokenizer {
 impl Iterator for CssTokenizer {
     type Item = CssToken;
 
-    /// https://www.w3.org/TR/css-syntax-3/#consume-a-string-token
+    /// https://www.w3.org/TR/css-syntax-3/#consume-token
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if self.pos >= self.input.len() {
@@ -177,8 +178,8 @@ impl Iterator for CssTokenizer {
                 }
                 '@' => {
                     if self.input[self.pos + 1].is_ascii_alphabetic()
-                        && self.input[self.pos + 2].is_alphabetic()
-                        && self.input[self.pos + 3].is_alphabetic()
+                        && self.input[self.pos + 2].is_alphanumeric()
+                        && self.input[self.pos + 3].is_alphanumeric()
                     {
                         // skip '@'
                         self.pos += 1;
