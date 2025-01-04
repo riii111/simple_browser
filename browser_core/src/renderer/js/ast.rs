@@ -97,6 +97,16 @@ impl JsParser {
         Self { t: t.peekable() }
     }
 
+    /// トークンが"="の場合、assignment_expressionを呼び、それを変数の初期値として返す
+    fn initialiser(&mut self) -> Option<Rc<Node>> {
+        let t = match self.t.next() {
+            Some(token) => token,
+            None => return None,
+        };
+
+        Node::new_string_literal(t.to_string())
+    }
+
     /// ASTを構築するためのメソッド
     pub fn parse_ast(&mut self) -> Program {
         let mut program = Program::new();
@@ -183,7 +193,22 @@ impl JsParser {
 
     /// EBNFのAssignmentExpressionを解析する
     fn assignment_expression(&mut self) -> Option<Rc<Node>> {
-        self.additive_expression()
+        let expr = self.additive_expression();
+
+        let t = match self.t.peek() {
+            Some(token) => token,
+            None => return expr,
+        };
+
+        match t {
+            Token::Punctuator('=') => {
+                // '='を消費する
+                assert!(self.t.next().is_some());
+                Node::new_assignment_expression('=', expr, self.assignment_expression())
+                // '='の場合はAssignmentExpressionノードを生成
+            }
+            _ => expr, // それ以外ならAdditiveExpressionを返す
+        }
     }
 
     /// EBNFのAdditiveExpressionを解析する
