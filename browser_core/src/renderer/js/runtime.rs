@@ -5,6 +5,7 @@ use alloc::format;
 use alloc::rc::Rc;
 use alloc::string::String;
 use alloc::string::ToString;
+use alloc::vec::Vec;
 use core::borrow::Borrow;
 use core::cell::RefCell;
 use core::fmt::Display;
@@ -66,12 +67,34 @@ impl Display for RuntimeValue {
     }
 }
 
+type VariableMap = Vec<(String, RuntimeValue)>;
+
+/// https://262.ecma-international.org/#sec-environment-records
 #[derive(Debug, Clone)]
-pub struct JsRuntime {}
+pub struct Environment {
+    variables: VariableMap,
+    outer: Option<Rc<RefCell<Environment>>>,
+}
+
+impl Environment {
+    pub fn new(outer: Option<Rc<RefCell<Environment>>>) -> Self {
+        Self {
+            variables: VariableMap::new(),
+            outer, // 外側のスコープを持つフィールド
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct JsRuntime {
+    env: Rc<RefCell<Environment>>,
+}
 
 impl JsRuntime {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            env: Rc::new(RefCell::new(Environment::new(None))),
+        }
     }
 
     pub fn execute(&self, program: &Program) {
