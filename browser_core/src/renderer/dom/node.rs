@@ -259,19 +259,3 @@ impl FromStr for ElementKind {
         }
     }
 }
-
-impl ElementKind {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            ElementKind::Html => "html",
-            ElementKind::Head => "head",
-            ElementKind::Style => "style",
-            ElementKind::Script => "script",
-            ElementKind::Body => "body",
-            ElementKind::H1 => "h1",
-            ElementKind::H2 => "h2",
-            ElementKind::P => "p",
-            ElementKind::A => "a",
-        }
-    }
-}
