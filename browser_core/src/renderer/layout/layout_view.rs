@@ -86,7 +86,7 @@ fn build_layout_tree(
             }
         }
 
-        let obj: &Rc<RefCell<LayoutObject>> = match layout_object {
+        let obj = match layout_object {
             Some(ref obj) => obj,
             None => panic!("render object should exist here"),
         };
@@ -117,6 +117,41 @@ impl LayoutView {
         tree
     }
 
+    pub fn find_node_by_position(&self, position: (i64, i64)) -> Option<Rc<RefCell<LayoutObject>>> {
+        Self::find_node_by_position_internal(&self.root(), position)
+    }
+
+    fn find_node_by_position_internal(
+        node: &Option<Rc<RefCell<LayoutObject>>>,
+        position: (i64, i64),
+    ) -> Option<Rc<RefCell<LayoutObject>>> {
+        match node {
+            Some(n) => {
+                let first_child = n.borrow().first_child();
+                let result1 = Self::find_node_by_position_internal(&first_child, position);
+                if result1.is_some() {
+                    return result1;
+                }
+
+                let next_sibling = n.borrow().next_sibling();
+                let result2 = Self::find_node_by_position_internal(&next_sibling, position);
+                if result2.is_some() {
+                    return result2;
+                }
+
+                if n.borrow().point().x() <= position.0
+                    && position.0 <= (n.borrow().point().x() + n.borrow().size().width())
+                    && n.borrow().point().y() <= position.1
+                    && position.1 <= (n.borrow().point().y() + n.borrow().size().height())
+                {
+                    return Some(n.clone());
+                }
+                None
+            }
+            None => None,
+        }
+    }
+
     fn calculate_node_size(node: &Option<Rc<RefCell<LayoutObject>>>, parent_size: LayoutSize) {
         if let Some(n) = node {
             // ノードがブロック要素の場合、子ノードのレイアウトを計算する前に横幅を決める
@@ -140,16 +175,16 @@ impl LayoutView {
     fn calculate_node_position(
         node: &Option<Rc<RefCell<LayoutObject>>>,
         parent_point: LayoutPoint,
-        previous_sibiling_kind: LayoutObjectKind,
-        previous_sibiling_point: Option<LayoutPoint>,
-        previous_sibiling_size: Option<LayoutSize>,
+        previous_sibling_kind: LayoutObjectKind,
+        previous_sibling_point: Option<LayoutPoint>,
+        previous_sibling_size: Option<LayoutSize>,
     ) {
         if let Some(n) = node {
             n.borrow_mut().compute_position(
                 parent_point,
-                previous_sibiling_kind,
-                previous_sibiling_point,
-                previous_sibiling_size,
+                previous_sibling_kind,
+                previous_sibling_point,
+                previous_sibling_size,
             );
 
             // ノード（node）の子ノードの位置を計算をする
@@ -211,41 +246,6 @@ impl LayoutView {
 
     pub fn root(&self) -> Option<Rc<RefCell<LayoutObject>>> {
         self.root.clone()
-    }
-
-    pub fn find_node_by_position(&self, position: (i64, i64)) -> Option<Rc<RefCell<LayoutObject>>> {
-        Self::find_node_by_position_internal(&self.root(), position)
-    }
-
-    fn find_node_by_position_internal(
-        node: &Option<Rc<RefCell<LayoutObject>>>,
-        position: (i64, i64),
-    ) -> Option<Rc<RefCell<LayoutObject>>> {
-        match node {
-            Some(n) => {
-                let first_child = n.borrow().first_child();
-                let result1 = Self::find_node_by_position_internal(&first_child, position);
-                if result1.is_some() {
-                    return result1;
-                }
-
-                let next_sibling = n.borrow().next_sibling();
-                let result2 = Self::find_node_by_position_internal(&next_sibling, position);
-                if result2.is_some() {
-                    return result2;
-                }
-
-                if n.borrow().point().x() <= position.0
-                    && position.0 <= (n.borrow().point().x() + n.borrow().size().width())
-                    && n.borrow().point().y() <= position.1
-                    && position.1 <= (n.borrow().point().y() + n.borrow().size().height())
-                {
-                    return Some(n.clone());
-                }
-                None
-            }
-            None => None,
-        }
     }
 }
 
