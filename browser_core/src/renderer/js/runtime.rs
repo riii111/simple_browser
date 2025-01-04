@@ -130,25 +130,25 @@ impl JsRuntime {
 
     pub fn execute(&self, program: &Program) {
         for node in program.body() {
-            self.eval(&Some(node.clone()));
+            self.eval(&Some(node.clone()), self.env.clone());
         }
     }
 
-    fn eval(&self, node: &Option<Rc<Node>>) -> Option<RuntimeValue> {
+    fn eval(&self, node: &Option<Rc<Node>>, env: Rc<RefCell<Environment>>) -> Option<RuntimeValue> {
         let node = match node {
             Some(n) => n,
             None => return None,
         };
 
         match node.borrow() {
-            Node::ExpressionStatement(expr) => self.eval(&expr),
+            Node::ExpressionStatement(expr) => self.eval(&expr, env.clone()),
             Node::AdditiveExpression {
                 operator,
                 left,
                 right,
             } => {
-                let left_value = self.eval(&left)?;
-                let right_value = self.eval(&right)?;
+                let left_value = self.eval(&left, env.clone())?;
+                let right_value = self.eval(&right, env.clone())?;
 
                 if operator == &'+' {
                     Some(left_value + right_value)
@@ -163,7 +163,17 @@ impl JsRuntime {
                 left,
                 right,
             } => {
-                // TODO: Implement assignment expression
+                if operator != &'=' {
+                    return None;
+                }
+                // 変数の割り当て
+                if let Some(node) = left {
+                    if let Node::Identifier(id) = node.borrow() {
+                        let new_value = self.eval(right, env.clone());
+                        env.borrow_mut().update_variable(id.clone(), new_value);
+                        return None;
+                    }
+                }
                 None
             }
             Node::MemberExpression { object, property } => {
@@ -171,8 +181,30 @@ impl JsRuntime {
                 None
             }
             Node::NumberLiteral(value) => Some(RuntimeValue::Number(*value)),
-            // TODO: あとで削除
-            _ => todo!(),
+            Node::VariableDeclaration { declarations } => {
+                for declaration in declarations {
+                    self.eval(&declaration, env.clone());
+                }
+                None
+            }
+            Node::VariableDeclarator { id, init } => {
+                if let Some(node) = id {
+                    if let Node::Identifier(id) = node.borrow() {
+                        let init = self.eval(&init, env.clone());
+                        env.borrow_mut().add_variable(id.clone(), init);
+                    }
+                }
+                None
+            }
+            Node::Identifier(name) => {
+                match env.borrow_mut().get_variable(name.clone()) {
+                    Some(v) => Some(v),
+                    // 変数名が初めて使用される場合は、まだ値は保存されていないので文字列として扱う
+                    // 例えば"var a = 42;"のようなコードなら、はStringLiteralとして扱われる
+                    None => Some(RuntimeValue::StringLiteral(name.clone())),
+                }
+            }
+            Node::StringLiteral(value) => Some(RuntimeValue::StringLiteral(value.clone())),
         }
     }
 }
@@ -195,7 +227,7 @@ mod tests {
         let mut i = 0;
 
         for node in ast.body() {
-            let result = runtime.eval(&Some(node.clone()));
+            let result = runtime.eval(&Some(node.clone()), runtime.env.clone());
             assert_eq!(result, expected[i]);
             i += 1;
         }
@@ -213,7 +245,7 @@ mod tests {
         let mut i = 0;
 
         for node in ast.body() {
-            let result = runtime.eval(&Some(node.clone()));
+            let result = runtime.eval(&Some(node.clone()), runtime.env.clone());
             assert_eq!(result, expected[i]);
             i += 1;
         }
