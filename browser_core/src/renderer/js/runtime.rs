@@ -117,6 +117,8 @@ impl JsRuntime {
                 None
             }
             Node::NumberLiteral(value) => Some(RuntimeValue::Number(*value)),
+            // TODO: あとで削除
+            _ => todo!(),
         }
     }
 }
