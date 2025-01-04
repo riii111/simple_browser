@@ -1,6 +1,8 @@
+use crate::renderer::css::cssom::Declaration;
 use crate::renderer::js::token::JsLexer;
 use crate::renderer::js::token::Token;
 use alloc::rc::Rc;
+use alloc::string::String;
 use alloc::vec::Vec;
 use core::iter::Peekable;
 
@@ -22,6 +24,15 @@ pub enum Node {
         property: Option<Rc<Node>>,
     },
     NumberLiteral(u64),
+    VariableDeclaration {
+        declarations: Vec<Option<Rc<Node>>>,
+    },
+    VariableDeclarator {
+        id: Option<Rc<Node>>,
+        init: Option<Rc<Node>>,
+    },
+    Identifier(String),
+    StringLiteral(String),
 }
 
 impl Node {
@@ -62,6 +73,18 @@ impl Node {
 
     pub fn new_numeric_literal(value: u64) -> Option<Rc<Self>> {
         Some(Rc::new(Node::NumberLiteral(value)))
+    }
+
+    pub fn new_variable_declaration(declarations: Vec<Option<Rc<Self>>>) -> Option<Rc<Self>> {
+        Some(Rc::new(Node::VariableDeclaration { declarations }))
+    }
+
+    pub fn new_variable_identifier(name: String) -> Option<Rc<Self>> {
+        Some(Rc::new(Node::Identifier(name)))
+    }
+
+    pub fn new_string_literal(value: String) -> Option<Rc<Self>> {
+        Some(Rc::new(Node::StringLiteral(value)))
     }
 }
 
@@ -104,9 +127,49 @@ impl JsParser {
         self.statement()
     }
 
+    fn variable_declaration(&mut self) -> Option<Rc<Node>> {
+        let ident = self.identifier();
+
+        let declarator = Node::new_variable_declarator(ident, self.initialiser());
+
+        let mut declarations = Vec::new();
+        declarations.push(declarator);
+
+        Node::new_variable_declaration(declarations)
+    }
+
+    fn identifier(&mut self) -> Option<Rc<Node>> {
+        let t = match self.t.next() {
+            Some(token) => token,
+            None => return None,
+        };
+
+        match t {
+            Token::Identifier(name) => Node::new_variable_identifier(name),
+            _ => None,
+        }
+    }
+
     /// EBNFのStatement, ExpressionStatementを解析する
     fn statement(&mut self) -> Option<Rc<Node>> {
-        let node = Node::new_expression_statement(self.assignment_expression());
+        let t = match self.t.peek() {
+            Some(t) => t,
+            None => return None,
+        };
+
+        let node = match t {
+            Token::Keyword(keyword) => {
+                if keyword == "var" {
+                    // 予約語"var"を消費する
+                    assert!(self.t.next().is_some());
+
+                    self.variable_declaration()
+                } else {
+                    None
+                }
+            }
+            _ => Node::new_expression_statement(self.assignment_expression()),
+        };
 
         if let Some(Token::Punctuator(c)) = self.t.peek() {
             // ';'を消費する
