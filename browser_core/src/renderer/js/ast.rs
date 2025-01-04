@@ -1,4 +1,3 @@
-use crate::renderer::css::cssom::Declaration;
 use crate::renderer::js::token::JsLexer;
 use crate::renderer::js::token::Token;
 use alloc::rc::Rc;
@@ -79,12 +78,23 @@ impl Node {
         Some(Rc::new(Node::VariableDeclaration { declarations }))
     }
 
+    pub fn new_identifier(name: String) -> Option<Rc<Self>> {
+        Some(Rc::new(Node::Identifier(name)))
+    }
+
     pub fn new_variable_identifier(name: String) -> Option<Rc<Self>> {
         Some(Rc::new(Node::Identifier(name)))
     }
 
     pub fn new_string_literal(value: String) -> Option<Rc<Self>> {
         Some(Rc::new(Node::StringLiteral(value)))
+    }
+
+    pub fn new_variable_declarator(
+        id: Option<Rc<Self>>,
+        init: Option<Rc<Self>>,
+    ) -> Option<Rc<Self>> {
+        Some(Rc::new(Node::VariableDeclarator { id, init }))
     }
 }
 
@@ -104,7 +114,13 @@ impl JsParser {
             None => return None,
         };
 
-        Node::new_string_literal(t.to_string())
+        match t {
+            Token::Punctuator(c) => match c {
+                '=' => self.assignment_expression(),
+                _ => None,
+            },
+            _ => None,
+        }
     }
 
     /// ASTを構築するためのメソッド
@@ -251,6 +267,8 @@ impl JsParser {
         };
 
         match t {
+            Token::Identifier(value) => Node::new_identifier(value),
+            Token::StringLiteral(value) => Node::new_string_literal(value),
             Token::Number(value) => Node::new_numeric_literal(value),
             _ => None,
         }
