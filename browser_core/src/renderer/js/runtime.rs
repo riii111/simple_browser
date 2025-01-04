@@ -67,8 +67,10 @@ impl Display for RuntimeValue {
     }
 }
 
-type VariableMap = Vec<(String, RuntimeValue)>;
+/// 変数の名前と値のペアを保持するマップ
+type VariableMap = Vec<(String, Option<RuntimeValue>)>;
 
+/// JSの変数のスコープ管理を行う
 /// https://262.ecma-international.org/#sec-environment-records
 #[derive(Debug, Clone)]
 pub struct Environment {
@@ -80,7 +82,36 @@ impl Environment {
     pub fn new(outer: Option<Rc<RefCell<Environment>>>) -> Self {
         Self {
             variables: VariableMap::new(),
-            outer, // 外側のスコープを持つフィールド
+            outer, // 外側のスコープを持つフィールド(内側→外側へのスコープへはアクセス可だが、逆は不可であることを表現)
+        }
+    }
+
+    pub fn get_variable(&self, name: String) -> Option<RuntimeValue> {
+        for variable in &self.variables {
+            if variable.0 == name {
+                return variable.1.clone();
+            }
+            if let Some(env) = &self.outer {
+                return env.borrow_mut().get_variable(name);
+            }
+        }
+        None
+    }
+
+    /// 現在のスコープに新しい変数を追加
+    fn add_variable(&mut self, name: String, value: Option<RuntimeValue>) {
+        self.variables.push((name, value));
+    }
+
+    /// 現在のスコープに既存の変数を更新
+    fn update_variable(&mut self, name: String, value: Option<RuntimeValue>) {
+        for i in 0..self.variables.len() {
+            // もし変数を見つけた場合、今までの名前と値のタプルを削除し、新しい値とのタプルを追加
+            if self.variables[i].0 == name {
+                self.variables.remove(i);
+                self.variables.push((name, value));
+                return;
+            }
         }
     }
 }
