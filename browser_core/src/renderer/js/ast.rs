@@ -346,26 +346,15 @@ mod tests {
     #[test]
     fn test_assign_variable() {
         /* 変数に値を代入するプログラム */
-        let input = "var foo=42; var result=foo+1;";
+        let input = "var foo=\"bar\";";
         let lexer = JsLexer::new(input);
         let mut parser = JsParser::new(lexer);
-
         let mut expected = Program::new();
         let mut body = Vec::new();
-        body.push(Rc::new(Node::VariableDeclaration(Some(Rc::new(
-            Node::VariableDeclarator {
-                id: Some(Rc::new(Node::Identifier("foo".to_string()))),
-                init: Some(Rc::new(Node::NumberLiteral(42))),
-            },
-        )))));
         body.push(Rc::new(Node::VariableDeclaration {
             declarations: [Some(Rc::new(Node::VariableDeclarator {
-                id: Some(Rc::new(Node::Identifier("result".to_string()))),
-                init: Some(Rc::new(Node::AdditiveExpression {
-                    operator: '+',
-                    left: Some(Rc::new(Node::Identifier("foo".to_string()))),
-                    right: Some(Rc::new(Node::NumberLiteral(1))),
-                })),
+                id: Some(Rc::new(Node::Identifier("foo".to_string()))),
+                init: Some(Rc::new(Node::StringLiteral("bar".to_string()))),
             }))]
             .to_vec(),
         }));
