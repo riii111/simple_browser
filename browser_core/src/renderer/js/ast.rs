@@ -421,12 +421,30 @@ impl JsParser {
                 }
                 None => return args,
             }
-        }
+        }　
     }
 
     /// EBNFのMemberExpressionを解析する
     fn member_expression(&mut self) -> Option<Rc<Node>> {
-        self.primary_expression()
+        let expr = self.primary_expression();
+
+        let t = match self.t.peek() {
+            Some(token) => token,
+            None => return expr,
+        };
+
+        match t {
+            Token::Punctuator(c) => {
+                if c == &'.' {
+                    // '.'を消費する
+                    assert!(self.t.next().is_some());
+                    Node::new_member_expression(expr, self.identifier())
+                } else {
+                    expr
+                }
+            }
+            _ => expr,
+        }
     }
 
     /// EBNFのPrimaryExpressionを解析する
