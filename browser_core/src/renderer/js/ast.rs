@@ -256,7 +256,7 @@ impl JsParser {
         }
 
         // 関数本体を解析する
-        let body = Vec::new();
+        let mut body = Vec::new();
         loop {
             // '}'に到達するまで、関数内のコードとして解釈
             match self.t.peek() {
@@ -270,6 +270,8 @@ impl JsParser {
                 },
                 None => {}
             }
+
+            body.push(self.source_element());
         }
     }
 
