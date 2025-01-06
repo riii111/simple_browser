@@ -244,7 +244,6 @@ impl JsParser {
         }
     }
 
-
     /// EBNFのFunctionBodyを解析する
     fn function_body(&mut self) -> Option<Rc<Node>> {
         // '{'を消費する
@@ -257,7 +256,7 @@ impl JsParser {
         }
 
         // 関数本体を解析する
-        let mut body = Vec::new();
+        let body = Vec::new();
         loop {
             // '}'に到達するまで、関数内のコードとして解釈
             match self.t.peek() {
@@ -416,13 +415,13 @@ impl JsParser {
                         // ','を消費する
                         assert!(self.t.next().is_some());
                     }
+                    _ => {
+                        args.push(self.assignment_expression());
+                    }
                 },
-                _ => {
-                    args.push(self.assignment_expression());
-                }
                 None => return args,
             }
-        }　
+        }
     }
 
     /// EBNFのMemberExpressionを解析する
@@ -544,6 +543,94 @@ mod tests {
             declarations: [Some(Rc::new(Node::VariableDeclarator {
                 id: Some(Rc::new(Node::Identifier("foo".to_string()))),
                 init: Some(Rc::new(Node::StringLiteral("bar".to_string()))),
+            }))]
+            .to_vec(),
+        }));
+        expected.set_body(body);
+        assert_eq!(expected, parser.parse_ast());
+    }
+
+    #[test]
+    fn test_define_function() {
+        /* 関数を定義するプログラム */
+        let input = "function foo() { return 42; }";
+        let lexer = JsLexer::new(input);
+        let mut parser = JsParser::new(lexer);
+        let mut expected = Program::new();
+        let mut body = Vec::new();
+        body.push(Rc::new(Node::FunctionDeclaration {
+            id: Some(Rc::new(Node::Identifier("foo".to_string()))),
+            params: [].to_vec(),
+            body: Some(Rc::new(Node::BlockStatement {
+                body: [Some(Rc::new(Node::ReturnStatement {
+                    argument: Some(Rc::new(Node::NumberLiteral(42))),
+                }))]
+                .to_vec(),
+            })),
+        }));
+        expected.set_body(body);
+        assert_eq!(expected, parser.parse_ast());
+    }
+
+    #[test]
+    fn test_define_function_with_args() {
+        /* 引数を持つ関数を定義するプログラム */
+        let input = "function foo(a, b) { return a + b; }";
+        let lexer = JsLexer::new(input);
+        let mut parser = JsParser::new(lexer);
+        let mut expected = Program::new();
+        let mut body = Vec::new();
+        body.push(Rc::new(Node::FunctionDeclaration {
+            id: Some(Rc::new(Node::Identifier("foo".to_string()))),
+            params: [
+                Some(Rc::new(Node::Identifier("a".to_string()))),
+                Some(Rc::new(Node::Identifier("b".to_string()))),
+            ]
+            .to_vec(),
+            body: Some(Rc::new(Node::BlockStatement {
+                body: [Some(Rc::new(Node::ReturnStatement {
+                    argument: Some(Rc::new(Node::AdditiveExpression {
+                        operator: '+',
+                        left: Some(Rc::new(Node::Identifier("a".to_string()))),
+                        right: Some(Rc::new(Node::Identifier("b".to_string()))),
+                    })),
+                }))]
+                .to_vec(),
+            })),
+        }));
+        expected.set_body(body);
+        assert_eq!(expected, parser.parse_ast());
+    }
+
+    #[test]
+    fn test_add_function_add_num() {
+        /* 関数を呼び出すプログラム */
+        let input = "function foo() { return 42; } var result = foo() + 1;";
+        let lexer = JsLexer::new(input);
+        let mut parser = JsParser::new(lexer);
+        let mut expected = Program::new();
+        let mut body = Vec::new();
+        body.push(Rc::new(Node::FunctionDeclaration {
+            id: Some(Rc::new(Node::Identifier("foo".to_string()))),
+            params: [].to_vec(),
+            body: Some(Rc::new(Node::BlockStatement {
+                body: [Some(Rc::new(Node::ReturnStatement {
+                    argument: Some(Rc::new(Node::NumberLiteral(42))),
+                }))]
+                .to_vec(),
+            })),
+        }));
+        body.push(Rc::new(Node::VariableDeclaration {
+            declarations: [Some(Rc::new(Node::VariableDeclarator {
+                id: Some(Rc::new(Node::Identifier("result".to_string()))),
+                init: Some(Rc::new(Node::AdditiveExpression {
+                    operator: '+',
+                    left: Some(Rc::new(Node::CallExpression {
+                        callee: Some(Rc::new(Node::Identifier("foo".to_string()))),
+                        arguments: [].to_vec(),
+                    })),
+                    right: Some(Rc::new(Node::NumberLiteral(1))),
+                })),
             }))]
             .to_vec(),
         }));

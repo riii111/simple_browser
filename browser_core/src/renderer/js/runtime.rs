@@ -205,6 +205,7 @@ impl JsRuntime {
                 }
             }
             Node::StringLiteral(value) => Some(RuntimeValue::StringLiteral(value.clone())),
+            _ => todo!(),
         }
     }
 }
