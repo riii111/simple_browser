@@ -104,11 +104,12 @@ impl Environment {
             if variable.0 == name {
                 return variable.1.clone();
             }
-            if let Some(env) = &self.outer {
-                return env.borrow_mut().get_variable(name);
-            }
         }
-        None
+        if let Some(env) = &self.outer {
+            env.borrow_mut().get_variable(name)
+        } else {
+            None
+        }
     }
 
     /// 現在のスコープに新しい変数を追加
@@ -374,6 +375,60 @@ mod tests {
         let ast = parser.parse_ast();
         let mut runtime = JsRuntime::new();
         let expected = [None, None, Some(RuntimeValue::Number(1))];
+        let mut i = 0;
+
+        for node in ast.body() {
+            let result = runtime.eval(&Some(node.clone()), runtime.env.clone());
+            assert_eq!(expected[i], result);
+            i += 1;
+        }
+    }
+
+    #[test]
+    fn test_add_function_and_num() {
+        /* 関数を呼び出し、その戻り値と足し算を行うプログラム */
+        let input = "function foo() { return 42; } foo()+1";
+        let lexer = JsLexer::new(input);
+        let mut parser = JsParser::new(lexer);
+        let ast = parser.parse_ast();
+        let mut runtime = JsRuntime::new();
+        let expected = [None, Some(RuntimeValue::Number(43))];
+        let mut i = 0;
+
+        for node in ast.body() {
+            let result = runtime.eval(&Some(node.clone()), runtime.env.clone());
+            assert_eq!(expected[i], result);
+            i += 1;
+        }
+    }
+
+    #[test]
+    fn test_define_function_with_args() {
+        /* 引数つきの関数を呼び出し、その戻り値と足し算を行うプログラム */
+        let input = "function foo(a, b) { return a + b; } foo(1, 2) + 3;";
+        let lexer = JsLexer::new(input);
+        let mut parser = JsParser::new(lexer);
+        let ast = parser.parse_ast();
+        let mut runtime = JsRuntime::new();
+        let expected = [None, Some(RuntimeValue::Number(6))];
+        let mut i = 0;
+
+        for node in ast.body() {
+            let result = runtime.eval(&Some(node.clone()), runtime.env.clone());
+            assert_eq!(expected[i], result);
+            i += 1;
+        }
+    }
+
+    #[test]
+    fn test_local_variable() {
+        /* ローカル変数を定義し、そのローカル変数を関数内で参照するプログラム */
+        let input = "var a=42; function foo() { var a=1; return a; } foo()+a";
+        let lexer = JsLexer::new(input);
+        let mut parser = JsParser::new(lexer);
+        let ast = parser.parse_ast();
+        let mut runtime = JsRuntime::new();
+        let expected = [None, None, Some(RuntimeValue::Number(43))];
         let mut i = 0;
 
         for node in ast.body() {
