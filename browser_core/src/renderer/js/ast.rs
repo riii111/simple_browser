@@ -213,17 +213,17 @@ impl JsParser {
     fn parameter_list(&mut self) -> Vec<Option<Rc<Node>>> {
         let mut params = Vec::new();
 
-        // '('を消費する。それ以外はエラー
+        // '('を消費する。もし次のトークンが'('でない場合、エラーになる
         match self.t.next() {
             Some(t) => match t {
-                Token::Punctuator('(') => assert!(c == '('),
+                Token::Punctuator(c) => assert!(c == '('),
                 _ => unimplemented!("function should have `(` but got {:?}", t),
             },
             None => unimplemented!("function should have `(` but got None"),
         }
 
         loop {
-            // ')'に到達するまで、paramsに仮引数となる変数を追加
+            // ')'に到達するまで、paramsに仮引数となる変数を追加する
             match self.t.peek() {
                 Some(t) => match t {
                     Token::Punctuator(')') => {
@@ -243,6 +243,7 @@ impl JsParser {
             }
         }
     }
+
 
     /// EBNFのFunctionBodyを解析する
     fn function_body(&mut self) -> Option<Rc<Node>> {
@@ -264,7 +265,7 @@ impl JsParser {
                     Token::Punctuator('}') => {
                         // '}'を消費し、BlockStatementノードを返す
                         assert!(self.t.next().is_some());
-                        return Some(Node::new_block_statement(body));
+                        return Node::new_block_statement(body);
                     }
                     _ => {}
                 },
