@@ -398,6 +398,32 @@ impl JsParser {
         }
     }
 
+    /// EBNFのArgumentsを解析する
+    fn arguments(&mut self) -> Vec<Option<Rc<Node>>> {
+        let mut args = Vec::new();
+
+        loop {
+            // )に到達するまで、解釈した値をargsに追加
+            match self.t.peek() {
+                Some(t) => match t {
+                    Token::Punctuator(')') => {
+                        // ')'を消費する
+                        assert!(self.t.next().is_some());
+                        return args;
+                    }
+                    Token::Punctuator(',') => {
+                        // ','を消費する
+                        assert!(self.t.next().is_some());
+                    }
+                },
+                _ => {
+                    args.push(self.assignment_expression());
+                }
+                None => return args,
+            }
+        }
+    }
+
     /// EBNFのMemberExpressionを解析する
     fn member_expression(&mut self) -> Option<Rc<Node>> {
         self.primary_expression()
