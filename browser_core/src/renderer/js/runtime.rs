@@ -67,6 +67,19 @@ impl Display for RuntimeValue {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Function {
+    id: String,
+    params: Vec<Option<Rc<Node>>>,
+    body: Option<Rc<Node>>,
+}
+
+impl Function {
+    pub fn new(id: String, params: Vec<Option<Rc<Node>>>, body: Option<Rc<Node>>) -> Self {
+        Self { id, params, body }
+    }
+}
+
 /// 変数の名前と値のペアを保持するマップ
 type VariableMap = Vec<(String, Option<RuntimeValue>)>;
 
@@ -119,22 +132,28 @@ impl Environment {
 #[derive(Debug, Clone)]
 pub struct JsRuntime {
     env: Rc<RefCell<Environment>>,
+    functions: Vec<Function>,
 }
 
 impl JsRuntime {
     pub fn new() -> Self {
         Self {
+            functions: Vec::new(),
             env: Rc::new(RefCell::new(Environment::new(None))),
         }
     }
 
-    pub fn execute(&self, program: &Program) {
+    pub fn execute(&mut self, program: &Program) {
         for node in program.body() {
             self.eval(&Some(node.clone()), self.env.clone());
         }
     }
 
-    fn eval(&self, node: &Option<Rc<Node>>, env: Rc<RefCell<Environment>>) -> Option<RuntimeValue> {
+    fn eval(
+        &mut self,
+        node: &Option<Rc<Node>>,
+        env: Rc<RefCell<Environment>>,
+    ) -> Option<RuntimeValue> {
         let node = match node {
             Some(n) => n,
             None => return None,
@@ -205,7 +224,65 @@ impl JsRuntime {
                 }
             }
             Node::StringLiteral(value) => Some(RuntimeValue::StringLiteral(value.clone())),
-            _ => todo!(),
+            Node::BlockStatement { body } => {
+                let mut result: Option<RuntimeValue> = None;
+                for stmt in body {
+                    result = self.eval(&stmt, env.clone());
+                }
+                result
+            }
+            Node::ReturnStatement { argument } => {
+                return self.eval(&argument, env.clone());
+            }
+            Node::FunctionDeclaration { id, params, body } => {
+                if let Some(RuntimeValue::StringLiteral(id)) = self.eval(&id, env.clone()) {
+                    let cloned_body = match body {
+                        Some(b) => Some(b.clone()),
+                        None => None,
+                    };
+                    self.functions
+                        .push(Function::new(id, params.to_vec(), cloned_body));
+                }
+                None
+            }
+            Node::CallExpression { callee, arguments } => {
+                // 新しいスコープを作成
+                let new_env = Rc::new(RefCell::new(Environment::new(Some(env))));
+
+                let callee_value = match self.eval(callee, new_env.clone()) {
+                    Some(value) => value,
+                    _ => return None,
+                };
+
+                // 既に定義されている関数を探す
+                let function = {
+                    let mut f: Option<Function> = None;
+
+                    for func in &self.functions {
+                        if callee_value == RuntimeValue::StringLiteral(func.id.to_string()) {
+                            f = Some(func.clone());
+                        }
+                    }
+                    match f {
+                        Some(f) => f,
+                        None => panic!("function {:?} not doesn't exist", callee),
+                    }
+                };
+                // 関数呼び出し時に渡される引数を新しく作成したスコープのローカル変数として割り当て
+                assert!(arguments.len() == function.params.len());
+                for (i, item) in arguments.iter().enumerate() {
+                    if let Some(RuntimeValue::StringLiteral(name)) =
+                        self.eval(&function.params[i], new_env.clone())
+                    {
+                        new_env
+                            .borrow_mut()
+                            .add_variable(name, self.eval(item, new_env.clone()));
+                    }
+                }
+
+                // 関数の中身を新しいスコープとともにevalメソッドで解釈する
+                self.eval(&function.body.clone(), new_env.clone())
+            }
         }
     }
 }
