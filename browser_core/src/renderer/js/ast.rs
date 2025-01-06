@@ -32,6 +32,21 @@ pub enum Node {
     },
     Identifier(String),
     StringLiteral(String),
+    BlockStatement {
+        body: Vec<Option<Rc<Node>>>,
+    },
+    ReturnStatement {
+        argument: Option<Rc<Node>>,
+    },
+    FunctionDeclaration {
+        id: Option<Rc<Node>>,
+        params: Vec<Option<Rc<Node>>>,
+        body: Option<Rc<Node>>,
+    },
+    CallExpression {
+        callee: Option<Rc<Node>>,
+        arguments: Vec<Option<Rc<Node>>>,
+    },
 }
 
 impl Node {
@@ -95,6 +110,29 @@ impl Node {
         init: Option<Rc<Self>>,
     ) -> Option<Rc<Self>> {
         Some(Rc::new(Node::VariableDeclarator { id, init }))
+    }
+
+    pub fn new_block_statement(body: Vec<Option<Rc<Self>>>) -> Option<Rc<Self>> {
+        Some(Rc::new(Node::BlockStatement { body }))
+    }
+
+    pub fn new_return_statement(argument: Option<Rc<Self>>) -> Option<Rc<Self>> {
+        Some(Rc::new(Node::ReturnStatement { argument }))
+    }
+
+    pub fn new_function_declaration(
+        id: Option<Rc<Self>>,
+        params: Vec<Option<Rc<Self>>>,
+        body: Option<Rc<Self>>,
+    ) -> Option<Rc<Self>> {
+        Some(Rc::new(Node::FunctionDeclaration { id, params, body }))
+    }
+
+    pub fn new_call_expression(
+        callee: Option<Rc<Self>>,
+        arguments: Vec<Option<Rc<Self>>>,
+    ) -> Option<Rc<Self>> {
+        Some(Rc::new(Node::CallExpression { callee, arguments }))
     }
 }
 
