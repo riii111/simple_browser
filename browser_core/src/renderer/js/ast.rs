@@ -183,12 +183,94 @@ impl JsParser {
 
     /// EBNFのSourceElementを解析する
     fn source_element(&mut self) -> Option<Rc<Node>> {
-        match self.t.peek() {
+        let t = match self.t.peek() {
             Some(t) => t,
             None => return None,
         };
 
-        self.statement()
+        match t {
+            Token::Keyword(keyword) => {
+                if keyword == "function" {
+                    // "function"を消費する
+                    assert!(self.t.next().is_some());
+                    self.function_declaration()
+                } else {
+                    self.statement()
+                }
+            }
+            _ => self.statement(),
+        }
+    }
+
+    /// EBNFのFunctionDeclarationを解析する
+    fn function_declaration(&mut self) -> Option<Rc<Node>> {
+        let id = self.identifier();
+        let params = self.parameter_list();
+        Node::new_function_declaration(id, params, self.function_body())
+    }
+
+    /// EBNFのFormalParameterListを解析する
+    fn parameter_list(&mut self) -> Vec<Option<Rc<Node>>> {
+        let mut params = Vec::new();
+
+        // '('を消費する。それ以外はエラー
+        match self.t.next() {
+            Some(t) => match t {
+                Token::Punctuator('(') => assert!(c == '('),
+                _ => unimplemented!("function should have `(` but got {:?}", t),
+            },
+            None => unimplemented!("function should have `(` but got None"),
+        }
+
+        loop {
+            // ')'に到達するまで、paramsに仮引数となる変数を追加
+            match self.t.peek() {
+                Some(t) => match t {
+                    Token::Punctuator(')') => {
+                        // ')'を消費する
+                        assert!(self.t.next().is_some());
+                        return params;
+                    }
+                    Token::Punctuator(',') => {
+                        // ','を消費する
+                        assert!(self.t.next().is_some());
+                    }
+                    _ => {
+                        params.push(self.identifier());
+                    }
+                },
+                None => return params,
+            }
+        }
+    }
+
+    /// EBNFのFunctionBodyを解析する
+    fn function_body(&mut self) -> Option<Rc<Node>> {
+        // '{'を消費する
+        match self.t.next() {
+            Some(t) => match t {
+                Token::Punctuator(c) => assert!(c == '{'),
+                _ => unimplemented!("function should have curly blacket but got {:?}", t),
+            },
+            None => unimplemented!("function should have curly blacket but got None"),
+        }
+
+        // 関数本体を解析する
+        let mut body = Vec::new();
+        loop {
+            // '}'に到達するまで、関数内のコードとして解釈
+            match self.t.peek() {
+                Some(t) => match t {
+                    Token::Punctuator('}') => {
+                        // '}'を消費し、BlockStatementノードを返す
+                        assert!(self.t.next().is_some());
+                        return Some(Node::new_block_statement(body));
+                    }
+                    _ => {}
+                },
+                None => {}
+            }
+        }
     }
 
     fn variable_declaration(&mut self) -> Option<Rc<Node>> {
@@ -228,6 +310,11 @@ impl JsParser {
                     assert!(self.t.next().is_some());
 
                     self.variable_declaration()
+                } else if keyword == "return" {
+                    // 予約語"return"を消費する
+                    assert!(self.t.next().is_some());
+
+                    Node::new_return_statement(self.assignment_expression())
                 } else {
                     None
                 }
@@ -289,7 +376,26 @@ impl JsParser {
 
     /// EBNFのLeftHandSideExpressionを解析する
     fn left_hand_side_expression(&mut self) -> Option<Rc<Node>> {
-        self.member_expression()
+        let expr = self.member_expression();
+
+        let t = match self.t.peek() {
+            Some(token) => token,
+            None => return expr,
+        };
+
+        match t {
+            Token::Punctuator(c) => {
+                if c == &'(' {
+                    // '('を消費する
+                    assert!(self.t.next().is_some());
+                    // 関数呼び出しのため、CallExpressionノードを返す
+                    return Node::new_call_expression(expr, self.arguments());
+                } else {
+                    expr
+                }
+            }
+            _ => expr,
+        }
     }
 
     /// EBNFのMemberExpressionを解析する
