@@ -4,10 +4,14 @@ use crate::http::HttpResponse;
 use crate::renderer::css::cssom::CssParser;
 use crate::renderer::css::cssom::StyleSheet;
 use crate::renderer::css::token::CssTokenizer;
+use crate::renderer::dom::api::get_js_content;
 use crate::renderer::dom::api::get_style_content;
 use crate::renderer::dom::node::Window;
 use crate::renderer::html::parser::HtmlParser;
 use crate::renderer::html::token::HtmlTokenizer;
+use crate::renderer::js::ast::JsParser;
+use crate::renderer::js::runtime::JsRuntime;
+use crate::renderer::js::token::JsLexer;
 use crate::renderer::layout::layout_view::LayoutView;
 use alloc::rc::Rc;
 use alloc::rc::Weak;
@@ -44,6 +48,8 @@ impl Page {
     pub fn receive_response(&mut self, response: HttpResponse) {
         self.create_frame(response.body());
 
+        self.execute_js();
+
         self.set_layout_view();
 
         self.paint_tree();
@@ -60,6 +66,22 @@ impl Page {
 
         self.frame = Some(frame);
         self.style = Some(cssom);
+    }
+
+    fn execute_js(&mut self) {
+        let dom = match &self.frame {
+            Some(frame) => frame.borrow().document(),
+            None => return,
+        };
+
+        let js = get_js_content(dom.clone());
+        let lexer = JsLexer::new(&js);
+
+        let mut parser = JsParser::new(lexer);
+        let ast = parser.parse_ast();
+
+        let mut runtime = JsRuntime::new(dom);
+        runtime.execute(&ast);
     }
 
     fn set_layout_view(&mut self) {

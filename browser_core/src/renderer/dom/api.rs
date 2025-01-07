@@ -76,3 +76,19 @@ pub fn get_element_by_id(
         None => None,
     }
 }
+
+pub fn get_js_content(root: Rc<RefCell<Node>>) -> String {
+    let js_node = match get_target_element_node(Some(root), ElementKind::Script) {
+        Some(node) => node,
+        None => return "".to_string(),
+    };
+    let text_node = match js_node.borrow().first_child() {
+        Some(node) => node,
+        None => return "".to_string(),
+    };
+    let content = match &text_node.borrow().kind() {
+        NodeKind::Text(ref s) => s.clone(),
+        _ => "".to_string(),
+    };
+    content
+}
