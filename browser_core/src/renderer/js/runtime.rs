@@ -1,4 +1,6 @@
+use crate::renderer::dom::api::get_element_by_id;
 use crate::renderer::dom::node::Node as DomNode;
+use crate::renderer::dom::node::NodeKind as DomNodeKind;
 use crate::renderer::js::ast::Node;
 use crate::renderer::js::ast::Program;
 use alloc::format;
@@ -134,11 +136,13 @@ impl Environment {
 pub struct JsRuntime {
     env: Rc<RefCell<Environment>>,
     functions: Vec<Function>,
+    dom_root: Rc<RefCell<DomNode>>,
 }
 
 impl JsRuntime {
-    pub fn new() -> Self {
+    pub fn new(dom_root: Rc<RefCell<DomNode>>) -> Self {
         Self {
+            dom_root,
             functions: Vec::new(),
             env: Rc::new(RefCell::new(Environment::new(None))),
         }
@@ -208,7 +212,9 @@ impl JsRuntime {
                 };
 
                 // document.getElementById("id")のようなコードの場合、object_valueは"document"となり、property_valueは"getElementById"となる
-                return Some(object_value + RuntimeValue::StringLiteral('.') + property_value);
+                return Some(
+                    object_value + RuntimeValue::StringLiteral(".".to_string()) + property_value,
+                );
             }
             Node::NumberLiteral(value) => Some(RuntimeValue::Number(*value)),
             Node::VariableDeclaration { declarations } => {
@@ -312,7 +318,7 @@ impl JsRuntime {
             let target = match get_element_by_id(Some(self.dom_root.clone()), &arg.to_string()) {
                 Some(n) => n,
                 None => return (true, None),
-            }
+            };
             return (
                 true,
                 // DOMツリーのノードをあらわすHtmlElementを返す
@@ -339,7 +345,8 @@ mod tests {
         let lexer = JsLexer::new(input);
         let mut parser = JsParser::new(lexer);
         let ast = parser.parse_ast();
-        let mut runtime = JsRuntime::new();
+        let dom = Rc::new(RefCell::new(DomNode::new(DomNodeKind::Document)));
+        let mut runtime = JsRuntime::new(dom);
         let expected = [Some(RuntimeValue::Number(3))];
         let mut i = 0;
 
@@ -357,7 +364,8 @@ mod tests {
         let lexer = JsLexer::new(input);
         let mut parser = JsParser::new(lexer);
         let ast = parser.parse_ast();
-        let mut runtime = JsRuntime::new();
+        let dom = Rc::new(RefCell::new(DomNode::new(DomNodeKind::Document)));
+        let mut runtime = JsRuntime::new(dom);
         let expected = [Some(RuntimeValue::Number(1))];
         let mut i = 0;
 
@@ -375,7 +383,8 @@ mod tests {
         let lexer = JsLexer::new(input);
         let mut parser = JsParser::new(lexer);
         let ast = parser.parse_ast();
-        let mut runtime = JsRuntime::new();
+        let dom = Rc::new(RefCell::new(DomNode::new(DomNodeKind::Document)));
+        let mut runtime = JsRuntime::new(dom);
         let expected = [None];
         let mut i = 0;
 
@@ -393,7 +402,8 @@ mod tests {
         let lexer = JsLexer::new(input);
         let mut parser = JsParser::new(lexer);
         let ast = parser.parse_ast();
-        let mut runtime = JsRuntime::new();
+        let dom = Rc::new(RefCell::new(DomNode::new(DomNodeKind::Document)));
+        let mut runtime = JsRuntime::new(dom);
         let expected = [None, Some(RuntimeValue::Number(43))];
         let mut i = 0;
 
@@ -411,7 +421,8 @@ mod tests {
         let lexer = JsLexer::new(input);
         let mut parser = JsParser::new(lexer);
         let ast = parser.parse_ast();
-        let mut runtime = JsRuntime::new();
+        let dom = Rc::new(RefCell::new(DomNode::new(DomNodeKind::Document)));
+        let mut runtime = JsRuntime::new(dom);
         let expected = [None, None, Some(RuntimeValue::Number(1))];
         let mut i = 0;
 
@@ -429,7 +440,8 @@ mod tests {
         let lexer = JsLexer::new(input);
         let mut parser = JsParser::new(lexer);
         let ast = parser.parse_ast();
-        let mut runtime = JsRuntime::new();
+        let dom = Rc::new(RefCell::new(DomNode::new(DomNodeKind::Document)));
+        let mut runtime = JsRuntime::new(dom);
         let expected = [None, Some(RuntimeValue::Number(43))];
         let mut i = 0;
 
@@ -447,7 +459,8 @@ mod tests {
         let lexer = JsLexer::new(input);
         let mut parser = JsParser::new(lexer);
         let ast = parser.parse_ast();
-        let mut runtime = JsRuntime::new();
+        let dom = Rc::new(RefCell::new(DomNode::new(DomNodeKind::Document)));
+        let mut runtime = JsRuntime::new(dom);
         let expected = [None, Some(RuntimeValue::Number(6))];
         let mut i = 0;
 
@@ -465,7 +478,8 @@ mod tests {
         let lexer = JsLexer::new(input);
         let mut parser = JsParser::new(lexer);
         let ast = parser.parse_ast();
-        let mut runtime = JsRuntime::new();
+        let dom = Rc::new(RefCell::new(DomNode::new(DomNodeKind::Document)));
+        let mut runtime = JsRuntime::new(dom);
         let expected = [None, None, Some(RuntimeValue::Number(43))];
         let mut i = 0;
 
