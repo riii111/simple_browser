@@ -1,6 +1,5 @@
 use crate::renderer::dom::api::get_element_by_id;
 use crate::renderer::dom::node::Node as DomNode;
-use crate::renderer::dom::node::NodeKind as DomNodeKind;
 use crate::renderer::js::ast::Node;
 use crate::renderer::js::ast::Program;
 use alloc::format;
@@ -270,6 +269,13 @@ impl JsRuntime {
                     Some(value) => value,
                     _ => return None,
                 };
+
+                // ブラウザAPIの呼び出しを試みる
+                let api_result = self.call_browser_api(&callee_value, arguments, new_env.clone());
+                if api_result.0 {
+                    // もしブラウザAPIを呼び出していたら、ユーザが定義した関数は実行しない
+                    return api_result.1;
+                }
 
                 // 既に定義されている関数を探す
                 let function = {
