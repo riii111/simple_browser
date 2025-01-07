@@ -296,6 +296,34 @@ impl JsRuntime {
             }
         }
     }
+
+    fn call_browser_api(
+        &mut self,
+        func: &RuntimeValue,
+        arguments: &[Option<Rc<Node>>],
+        env: Rc<RefCell<Environment>>,
+    ) -> (bool, Option<RuntimeValue>) {
+        if func == &RuntimeValue::StringLiteral("document.getElementById".to_string()) {
+            // 1つ目の引数を解釈
+            let arg = match self.eval(&arguments[0], env.clone()) {
+                Some(a) => a,
+                None => return (true, None),
+            };
+            let target = match get_element_by_id(Some(self.dom_root.clone()), &arg.to_string()) {
+                Some(n) => n,
+                None => return (true, None),
+            }
+            return (
+                true,
+                // DOMツリーのノードをあらわすHtmlElementを返す
+                Some(RuntimeValue::HtmlElement {
+                    object: target,
+                    property: None,
+                }),
+            );
+        }
+        (false, None)
+    }
 }
 
 #[cfg(test)]
