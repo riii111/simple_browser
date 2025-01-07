@@ -197,8 +197,18 @@ impl JsRuntime {
                 None
             }
             Node::MemberExpression { object, property } => {
-                // TODO: Implement member expression
-                None
+                let object_value = match self.eval(object, env.clone()) {
+                    Some(value) => value,
+                    None => return None,
+                };
+                let property_value = match self.eval(property, env.clone()) {
+                    Some(value) => value,
+                    // プロパティが存在しないため、object_valueを返す
+                    None => return Some(object_value),
+                };
+
+                // document.getElementById("id")のようなコードの場合、object_valueは"document"となり、property_valueは"getElementById"となる
+                return Some(object_value + RuntimeValue::StringLiteral('.') + property_value);
             }
             Node::NumberLiteral(value) => Some(RuntimeValue::Number(*value)),
             Node::VariableDeclaration { declarations } => {
