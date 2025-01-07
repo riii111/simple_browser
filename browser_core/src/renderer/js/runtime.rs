@@ -210,6 +210,16 @@ impl JsRuntime {
                     None => return Some(object_value),
                 };
 
+                // もしオブジェクトがDOMノードの場合、HtmlElementのpropertyを更新する
+                if let RuntimeValue::HtmlElement { object, property } = object_value {
+                    assert!(property.is_none());
+                    // HtmlElementのpropertyにproperty_valueの文字列をセットする
+                    return Some(RuntimeValue::HtmlElement {
+                        object,
+                        property: Some(property_value.to_string()),
+                    });
+                }
+
                 // document.getElementById("id")のようなコードの場合、object_valueは"document"となり、property_valueは"getElementById"となる
                 return Some(
                     object_value + RuntimeValue::StringLiteral(".".to_string()) + property_value,
