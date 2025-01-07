@@ -51,3 +51,28 @@ pub fn get_style_content(root: Rc<RefCell<Node>>) -> String {
     };
     content
 }
+
+/// DOMツリーから特定のIDの要素を取得するブラウザAPI
+pub fn get_element_by_id(
+    node: Option<Rc<RefCell<Node>>>,
+    id_name: &String,
+) -> Option<Rc<RefCell<Node>>> {
+    match node {
+        Some(n) => {
+            if let NodeKind::Element(e) = n.borrow().kind() {
+                for attr in &e.attributes() {
+                    if attr.name() == "id" && attr.value() == *id_name {
+                        return Some(n.clone());
+                    }
+                }
+            }
+            let result1 = get_element_by_id(n.borrow().first_child(), id_name);
+            let result2 = get_element_by_id(n.borrow().next_sibling(), id_name);
+            if result1.is_none() {
+                return result2;
+            }
+            result1
+        }
+        None => None,
+    }
+}
