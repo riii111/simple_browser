@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <style>
+      #title {
+        color: red;
+      }
+      .first {
+        color: #0000ff;
+      }
+      .hidden {
+        display: none;
+      }
+      .links {
+        background-color: #00ffff;
+      }
+    </style>
+    <script type="text/javascript">
+      function add(a, b) {
+        return a + b;
+      }
+
+      var target = document.getElementById("target");
+      target.textContent = "Answer? 1 + 2 = " + add(1, 2);
+    </script>
+  </head>
+  <body>
+    <h1 id="title">My Browser!</h1>
+    <p class="first">HTML, CSS and JavaScript are working on my browser :)</p>
+    <p class="links">
+      <a href="http://host.test:8000/test1.html">Test page1 </a>
+      <a href="http://host.test:8000/test2.html">Test page2</a>
+    </p>
+    <p class="hidden">none</p>
+    <p id="target">original text</p>
+  </body>
+</html>
