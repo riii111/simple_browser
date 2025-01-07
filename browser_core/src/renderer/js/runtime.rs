@@ -1,5 +1,6 @@
 use crate::renderer::dom::api::get_element_by_id;
 use crate::renderer::dom::node::Node as DomNode;
+use crate::renderer::dom::node::NodeKind as DomNodeKind;
 use crate::renderer::js::ast::Node;
 use crate::renderer::js::ast::Program;
 use alloc::format;
@@ -195,6 +196,27 @@ impl JsRuntime {
                         let new_value = self.eval(right, env.clone());
                         env.borrow_mut().update_variable(id.clone(), new_value);
                         return None;
+                    }
+                }
+
+                // もし左辺の値がDomツリーのノードをあらわすHtmlElementの場合、DOMツリーを更新
+                if let Some(RuntimeValue::HtmlElement { object, property }) =
+                    self.eval(&left, env.clone())
+                {
+                    let right_value = match self.eval(right, env.clone()) {
+                        Some(value) => value,
+                        None => return None,
+                    };
+
+                    if let Some(p) = property {
+                        // target.textContext = "foobar"; のようにノードのテキストを変更する
+                        if p == "textContext" {
+                            object
+                                .borrow_mut()
+                                .set_first_child(Some(Rc::new(RefCell::new(DomNode::new(
+                                    DomNodeKind::Text(right_value.to_string()),
+                                )))));
+                        }
                     }
                 }
                 None
